@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:smart_portfolio_tracker/presentation/screens/dashboard/dashboard_screen.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/dashboard_binding.dart';
 import '../bindings/stock_detail_binding.dart';
@@ -29,82 +30,83 @@ class AppPages {
       page: () => const SplashScreen(),
     ),
 
-    // // ─── ONBOARDING ──────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.ONBOARDING,
-    //   page: () => const OnboardingScreen(),
-    // ),
-    //
-    // // ─── AUTH ────────────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.LOGIN,
-    //   page: () => const LoginScreen(),
-    //   binding: AuthBinding(),
-    // ),
+    // ─── ONBOARDING ──────────────────────────────
+    GetPage(
+      name: AppRoutes.ONBOARDING,
+      page: () => const OnboardingScreen(),
+    ),
+
+    // ─── AUTH ────────────────────────────────────
+    GetPage(
+      name: AppRoutes.LOGIN,
+      page: () => const LoginScreen(),
+      // binding: AuthBinding(),
+    ),
     // GetPage(
     //   name: AppRoutes.SIGNUP,
     //   page: () => const SignupScreen(),
     //   binding: AuthBinding(),
     // ),
-    //
-    // // ─── DASHBOARD ───────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.DASHBOARD,
-    //   page: () => const MainNavigationScreen(),
-    //   binding: DashboardBinding(),
-    //   transition: Transition.fadeIn,
-    // ),
-    //
-    // // ─── STOCK DETAIL ────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.STOCK_DETAIL,
-    //   page: () => const StockDetailScreen(),
-    //   binding: StockDetailBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-    //
-    // // ─── ADD STOCK ───────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.ADD_STOCK,
-    //   page: () => const AddStockScreen(),
-    //   transition: Transition.downToUp,
-    // ),
-    //
-    // // ─── IMPORT CSV ──────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.IMPORT_CSV,
-    //   page: () => const ImportCsvScreen(),
-    //   transition: Transition.downToUp,
-    // ),
-    //
-    // // ─── AI CHAT ─────────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.AI_CHAT,
-    //   page: () => const AiChatScreen(),
-    //   binding: AiChatBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-    //
-    // // ─── MARKET NEWS ─────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.MARKET_NEWS,
-    //   page: () => const MarketNewsScreen(),
-    //   binding: NewsBinding(),
-    // ),
+
+    // ─── DASHBOARD (with bottom nav) ─────────────
+    GetPage(
+      name: AppRoutes.DASHBOARD,
+      page: () => const MainNavigationScreen(child: DashboardScreen()),
+      // binding: DashboardBinding(),
+      transition: Transition.fadeIn,
+    ),
+
+    // ─── STOCK DETAIL (no bottom nav) ────────────
+    GetPage(
+      name: AppRoutes.STOCK_DETAIL,
+      page: () => const StockDetailScreen(),
+      // binding: StockDetailBinding(),
+      transition: Transition.rightToLeft,
+    ),
+
+    // ─── ADD STOCK (no bottom nav) ───────────────
+    GetPage(
+      name: AppRoutes.ADD_STOCK,
+      page: () => const AddStockScreen(),
+      transition: Transition.downToUp,
+    ),
+
+    // ─── IMPORT CSV (no bottom nav) ──────────────
+    GetPage(
+      name: AppRoutes.IMPORT_CSV,
+      page: () => const ImportCsvScreen(),
+      transition: Transition.downToUp,
+    ),
+
+    // ─── AI CHAT (with bottom nav) ───────────────
+    GetPage(
+      name: AppRoutes.AI_CHAT,
+      page: () => const MainNavigationScreen(child: AiChatScreen()),
+      // binding: AiChatBinding(),
+      // transition: Transition.rightToLeft,
+      // preventDuplicates: true,
+    ),
+
+    // ─── MARKET NEWS (with bottom nav) ───────────
+    GetPage(
+      name: AppRoutes.MARKET_NEWS,
+      page: () => const MainNavigationScreen(child: MarketNewsScreen()),
+      // binding: NewsBinding(),
+    ),
     // GetPage(
     //   name: AppRoutes.NEWS_DETAIL,
     //   page: () => const NewsDetailScreen(),
     //   transition: Transition.rightToLeft,
     // ),
-    //
-    // // ─── PROFILE ─────────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.PROFILE,
-    //   page: () => const ProfileScreen(),
-    //   binding: ProfileBinding(),
-    // ),
-    //
-    // // ─── SUCCESS ─────────────────────────────────
+
+    // ─── PROFILE (with bottom nav) ───────────────
+    GetPage(
+      name: AppRoutes.PROFILE,
+      page: () => const MainNavigationScreen(child: ProfileScreen()),
+      // binding: ProfileBinding(),
+    ),
+
+    // ─── SUCCESS ─────────────────────────────────
     // GetPage(
     //   name: AppRoutes.SUCCESS,
     //   page: () => const SuccessScreen(),

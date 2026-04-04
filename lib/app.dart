@@ -8,6 +8,7 @@ import 'presentation/routes/app_routes.dart';
 class SmartPortfolioApp extends StatelessWidget {
   const SmartPortfolioApp({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -17,7 +18,7 @@ class SmartPortfolioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // ─── THEME ─────────────────────────────────────────
-      theme: AppTheme.lightTheme,
+      //theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
 
@@ -35,5 +36,6 @@ class SmartPortfolioApp extends StatelessWidget {
       transitionDuration: const Duration(milliseconds: 300),
 
     );
+
   }
 }

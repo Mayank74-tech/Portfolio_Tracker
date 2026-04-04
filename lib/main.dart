@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'config/firebase_config.dart';
-import 'config/hive_config.dart';
-import 'app.dart';
+import 'package:flutter/services.dart';
+import 'package:smart_portfolio_tracker/app.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env file
-  await dotenv.load(fileName: ".env");
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF0D1117),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
 
-  // // Initialize Firebase
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
-  //
-  // // Initialize Hive
-  // await HiveConfig.init();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(const SmartPortfolioApp());
 }

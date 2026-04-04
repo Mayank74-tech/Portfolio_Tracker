@@ -14,4 +14,5 @@ class AppRoutes {
   static const String NEWS_DETAIL = '/news-detail';
   static const String PROFILE = '/profile';
   static const String SUCCESS = '/success';
+
 }
