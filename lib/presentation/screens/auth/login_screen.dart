@@ -134,10 +134,22 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleSubmit() async {
+    final controller = Get.find<AuthController>();
     await _buttonController.forward();
     await _buttonController.reverse();
-    // Navigate to dashboard
-    Get.offAllNamed(AppRoutes.DASHBOARD);
+
+    if (_isLogin) {
+      await controller.loginWithEmail(
+        _emailController.text,
+        _passwordController.text,
+      );
+    } else {
+      await controller.signupWithEmail(
+        _emailController.text,
+        _passwordController.text,
+        _nameController.text,
+      );
+    }
   }
 
   @override
@@ -405,7 +417,8 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: GestureDetector(
-                      onTap: () {},
+                      onTap: () => Get.find<AuthController>()
+                          .sendPasswordReset(_emailController.text),
                       child: const Text(
                         'Forgot password?',
                         style: TextStyle(
@@ -417,6 +430,23 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
+
+              // ── Error message ──
+              Obx(() {
+                final ctrl = Get.find<AuthController>();
+                if (ctrl.errorMessage.value.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Text(
+                    ctrl.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFEF4444),
+                      fontSize: 13,
+                    ),
+                  ),
+                );
+              }),
 
               const SizedBox(height: 22),
 
@@ -447,26 +477,32 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ],
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _isLogin ? 'Sign In' : 'Create Account',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
+                    child: Obx(() {
+                      final ctrl = Get.find<AuthController>();
+                      return ctrl.isLoading.value
+                          ? const CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2.5)
+                          : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _isLogin ? 'Sign In' : 'Create Account',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ],
+                      );
+                    }),
                   ),
                 ),
               ),
@@ -507,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen>
 
               // ── Google button ──
               GestureDetector(
-                onTap: () => Get.offAllNamed(AppRoutes.DASHBOARD),
+                onTap: () => Get.find<AuthController>().signInWithGoogle(),
                 child: Container(
                   height: 54,
                   decoration: BoxDecoration(

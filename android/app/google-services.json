@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "996665433448",
+    "project_id": "smart-portfolio-tracker",
+    "storage_bucket": "smart-portfolio-tracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996665433448:android:93b331279813a86b33cadd",
+        "android_client_info": {
+          "package_name": "com.example.smart_portfolio_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "996665433448-df7kff90am282m6238es4gksu0if979v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smart_portfolio_tracker",
+            "certificate_hash": "41e8403029d7c028c9ad9c30deafae8aa6f58348"
+          }
+        },
+        {
+          "client_id": "996665433448-5omicee71bclq6b4cc29bjf246v066mp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMoHf2haEbM3YVOjOHu_g3KXWeUqCrsA0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "996665433448-5omicee71bclq6b4cc29bjf246v066mp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "996665433448-jfjbbf0p4mtcabtu5tkol68hute5ka6r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.smartPortfolioTracker"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

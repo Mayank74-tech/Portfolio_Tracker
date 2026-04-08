@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
@@ -147,7 +148,15 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate after splash
     await Future.delayed(const Duration(milliseconds: 2800));
-    if (mounted) {
+    if (!mounted) return;
+
+    // ── Check Firebase auth state ──
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Already logged in → skip login & onboarding
+      Get.offAllNamed(AppRoutes.DASHBOARD);
+    } else {
+      // First time or logged out → show onboarding
       Get.offNamed(AppRoutes.ONBOARDING);
     }
   }
@@ -197,7 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
           ),
 
           // ── Version tag ──
-          Positioned(
+          const Positioned(
             bottom: 20,
             left: 0,
             right: 0,
@@ -205,7 +214,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Text(
                 'v1.0.0',
                 style: TextStyle(
-                  color: const Color(0xFF334155),
+                  color: Color(0xFF334155),
                   fontSize: 11,
                   letterSpacing: 0.5,
                 ),

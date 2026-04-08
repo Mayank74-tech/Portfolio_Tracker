@@ -8,7 +8,6 @@ import 'presentation/routes/app_routes.dart';
 class SmartPortfolioApp extends StatelessWidget {
   const SmartPortfolioApp({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -18,9 +17,11 @@ class SmartPortfolioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // ─── THEME ─────────────────────────────────────────
-      //theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+
+      // ─── INITIAL BINDING (runs before app loads) ───────
+      initialBinding: InitialBinding(),
 
       // ─── NAVIGATION STARTS FROM SPLASH ─────────────────
       initialRoute: AppRoutes.SPLASH,
@@ -28,14 +29,10 @@ class SmartPortfolioApp extends StatelessWidget {
       // ─── ALL ROUTES REGISTERED ─────────────────────────
       getPages: AppPages.pages,
 
-      // ─── INITIAL BINDING (runs before app loads) ───────
-      // initialBinding: InitialBinding(),
-
       // ─── DEFAULT TRANSITION ────────────────────────────
       defaultTransition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 300),
 
     );
-
   }
 }

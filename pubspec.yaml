@@ -19,8 +19,8 @@ dependencies:
   # ───────────────────────────────────────
   # FIREBASE
   # ───────────────────────────────────────
-  firebase_core: ^2.27.1
-  firebase_auth: ^4.17.9
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.20.0
   cloud_firestore: ^4.15.9
   google_sign_in: ^6.2.1
 
@@ -79,6 +79,7 @@ dev_dependencies:
   hive_generator: ^2.0.1
   build_runner: ^2.4.9
   flutter_lints: ^4.0.0
+
 
 flutter:
   uses-material-design: true

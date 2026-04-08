@@ -2,25 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/theme_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/auth_controller.dart';
 
-// ─────────────────────────────────────────────
-//  Mock user data
-// ─────────────────────────────────────────────
-class _MockUser {
-  final String name;
-  final String email;
-  final String avatarInitials;
-  const _MockUser(
-      {required this.name,
-        required this.email,
-        required this.avatarInitials});
-}
+import '../../../data/services/local/hive_service.dart';
 
-const _mockUser = _MockUser(
-  name: 'Arjun Sharma',
-  email: 'arjun@gmail.com',
-  avatarInitials: 'AS',
-);
+// // ─────────────────────────────────────────────
+// //  Mock user data
+// // ─────────────────────────────────────────────
+// class _MockUser {
+//   final String name;
+//   final String email;
+//   final String avatarInitials;
+//   const _MockUser(
+//       {required this.name,
+//         required this.email,
+//         required this.avatarInitials});
+// }
+//
+// const _mockUser = _MockUser(
+//   name: 'Arjun Sharma',
+//   email: 'arjun@gmail.com',
+//   avatarInitials: 'AS',
+// );
 
 // ─────────────────────────────────────────────
 //  Profile Screen
@@ -39,6 +42,31 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _notifications = true;
   bool _biometric = false;
   String _currency = 'INR';
+
+  // ── Real Firebase user helpers ──
+  AuthController get _auth => Get.find<AuthController>();
+
+  // Hive first (instant, offline) → Firebase fallback
+  String get _displayName =>
+      HiveService.savedName ??
+          _auth.firebaseUser.value?.displayName ??
+          _auth.firebaseUser.value?.email?.split('@').first ??
+          'Investor';
+
+  String get _userEmail =>
+      HiveService.savedEmail ??
+          _auth.firebaseUser.value?.email ??
+          '';
+
+  String get _initials {
+    final parts = _displayName.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return _displayName.isNotEmpty
+        ? _displayName[0].toUpperCase()
+        : 'U';
+  }
 
   // Entrance animation
   late final AnimationController _entranceCtrl;
@@ -282,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     child: Center(
                       child: Text(
-                        _mockUser.avatarInitials,
+                        _initials,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -298,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _mockUser.name,
+                          _displayName,
                           style: const TextStyle(
                             color: Color(0xFFF1F5F9),
                             fontSize: 17,
@@ -307,7 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _mockUser.email,
+                          _userEmail,
                           style: const TextStyle(
                             color: Color(0xFF94A3B8),
                             fontSize: 12,
@@ -550,7 +578,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ─────────────────────────────────────────────
   Widget _buildSignOutButton() {
     return GestureDetector(
-      onTap: () => Get.offAllNamed(AppRoutes.LOGIN),
+      onTap: () => Get.find<AuthController>().logout(),
       child: Container(
         height: 56,
         decoration: BoxDecoration(
