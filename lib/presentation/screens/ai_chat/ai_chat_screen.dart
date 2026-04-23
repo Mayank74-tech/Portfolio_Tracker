@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/ai_controller.dart';
 
 // ─────────────────────────────────────────────
 //  Data models
@@ -22,8 +22,7 @@ class _Message {
     this.isTyping = false,
   });
 
-  _Message copyWith({bool? isTyping, String? text, String? time}) =>
-      _Message(
+  _Message copyWith({bool? isTyping, String? text, String? time}) => _Message(
         id: id,
         role: role,
         text: text ?? this.text,
@@ -38,22 +37,10 @@ final _initialMessages = [
     id: 1,
     role: _Role.ai,
     text:
-    'Hello! I\'m your AI portfolio assistant powered by Llama 3. I can analyze your holdings, explain market trends, and give you personalized insights. What would you like to know?',
+        'Hello! I\'m your AI portfolio assistant powered by Llama 3. I can analyze your holdings, explain market trends, and give you personalized insights. What would you like to know?',
     time: '10:00 AM',
   ),
 ];
-
-// Canned AI responses
-const _aiResponses = {
-  'Why is my portfolio down?':
-  'Your portfolio dropped mainly due to:\n\n• **INFY** fell -1.5% following broader IT sector weakness\n• **RELIANCE** fell -1.4% due to crude oil price concerns\n\nHowever, TCS (+2.1%) and WIPRO (+1.2%) partially offset these losses. Net today: -₹380 (-0.3%).',
-  'Which is my best stock?':
-  '🏆 **TCS** is your top performer!\n\n• Current: ₹3,842.50\n• Avg Buy: ₹3,500\n• Return: +₹3,425 (+9.8%)\n\nWIPRO is also performing well with +8.6% returns since purchase.',
-  'Should I diversify?':
-  '⚠️ **Diversification Alert**\n\n70% of your portfolio is concentrated in the **IT Sector** (TCS, INFY, WIPRO). This increases sector-specific risk.\n\n**Suggestions:**\n• Add FMCG or Healthcare stocks\n• Consider HDFC or ICICI for more banking exposure\n• Gold/Debt allocation can reduce volatility',
-  'Summarize my portfolio':
-  '📊 **Portfolio Summary**\n\nTotal Value: ₹1,25,430\nTotal Invested: ₹1,20,000\nOverall Profit: +₹5,430 (+4.5%)\nToday\'s Change: +₹2,300 (+1.84%)\n\n5 stocks across 3 platforms\nBest Performer: TCS (+9.8%)\nWorst Performer: RELIANCE (-3.7%)',
-};
 
 const _suggestions = [
   'Why is my portfolio down?',
@@ -74,12 +61,10 @@ class AiChatScreen extends StatefulWidget {
 
 class _AiChatScreenState extends State<AiChatScreen>
     with TickerProviderStateMixin {
+  late final AiController _aiController;
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   final _inputFocus = FocusNode();
-
-  List<_Message> _messages = List.from(_initialMessages);
-  bool _isTyping = false;
 
   // Animation controllers
   late final AnimationController _headerCtrl;
@@ -89,14 +74,14 @@ class _AiChatScreenState extends State<AiChatScreen>
   @override
   void initState() {
     super.initState();
+    _aiController = Get.find<AiController>();
+    _aiController.checkAvailability();
     _headerCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
-    _headerFade =
-        CurvedAnimation(parent: _headerCtrl, curve: Curves.easeIn);
-    _headerSlide = Tween<Offset>(
-        begin: const Offset(0, -0.1), end: Offset.zero)
-        .animate(CurvedAnimation(
-        parent: _headerCtrl, curve: Curves.easeOutCubic));
+    _headerFade = CurvedAnimation(parent: _headerCtrl, curve: Curves.easeIn);
+    _headerSlide = Tween<Offset>(begin: const Offset(0, -0.1), end: Offset.zero)
+        .animate(
+            CurvedAnimation(parent: _headerCtrl, curve: Curves.easeOutCubic));
     _headerCtrl.forward();
   }
 
@@ -104,49 +89,8 @@ class _AiChatScreenState extends State<AiChatScreen>
     if (text.trim().isEmpty) return;
     final trimmed = text.trim();
     _inputController.clear();
-
-    final now = TimeOfDay.now();
-    final timeStr =
-        '${now.hourOfPeriod}:${now.minute.toString().padLeft(2, '0')} ${now.period.name.toUpperCase()}';
-
-    final userMsg = _Message(
-      id: DateTime.now().millisecondsSinceEpoch,
-      role: _Role.user,
-      text: trimmed,
-      time: timeStr,
-    );
-    final typingMsg = _Message(
-      id: DateTime.now().millisecondsSinceEpoch + 1,
-      role: _Role.ai,
-      text: '',
-      time: '',
-      isTyping: true,
-    );
-
-    setState(() {
-      _messages = [..._messages, userMsg, typingMsg];
-      _isTyping = true;
-    });
-    _scrollToBottom();
-
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-
-    final aiText = _aiResponses[trimmed] ??
-        'I analyzed your portfolio regarding "$trimmed". Your portfolio shows strong fundamentals with TCS leading at +9.8%. Consider monitoring RELIANCE and INFY closely. Would you like a detailed breakdown?';
-
-    setState(() {
-      _messages = _messages
-          .where((m) => !m.isTyping)
-          .toList()
-        ..add(_Message(
-          id: DateTime.now().millisecondsSinceEpoch + 2,
-          role: _Role.ai,
-          text: aiText,
-          time: timeStr,
-        ));
-      _isTyping = false;
-    });
+    setState(() {});
+    await _aiController.sendMessage(trimmed);
     _scrollToBottom();
   }
 
@@ -162,6 +106,41 @@ class _AiChatScreenState extends State<AiChatScreen>
     });
   }
 
+  List<_Message> get _visibleMessages {
+    final controllerMessages = _aiController.messages.map((message) {
+      final sender = message['sender']?.toString();
+      return _Message(
+        id: (message['created_at']?.toString() ?? message.hashCode.toString())
+            .hashCode,
+        role: sender == 'user' ? _Role.user : _Role.ai,
+        text: message['message']?.toString() ?? '',
+        time: _formatTime(message['created_at']),
+      );
+    }).toList();
+
+    final messages = [..._initialMessages, ...controllerMessages];
+    if (_aiController.isLoading.value) {
+      messages.add(
+        _Message(
+          id: -1,
+          role: _Role.ai,
+          text: '',
+          time: '',
+          isTyping: true,
+        ),
+      );
+    }
+    return messages;
+  }
+
+  String _formatTime(Object? value) {
+    final date = DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
   @override
   void dispose() {
     _inputController.dispose();
@@ -173,33 +152,34 @@ class _AiChatScreenState extends State<AiChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
-          child: Column(
-            children: [
-              // ── Header ──
-              FadeTransition(
-                opacity: _headerFade,
-                child: SlideTransition(
-                  position: _headerSlide,
-                  child: _buildHeader(),
-                ),
+    return Obx(() => GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Scaffold(
+            backgroundColor: const Color(0xFF0B1120),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // ── Header ──
+                  FadeTransition(
+                    opacity: _headerFade,
+                    child: SlideTransition(
+                      position: _headerSlide,
+                      child: _buildHeader(),
+                    ),
+                  ),
+                  // ── Messages ──
+                  Expanded(child: _buildMessageList()),
+                  // ── Suggestions ──
+                  if (!_aiController.isLoading.value &&
+                      _visibleMessages.length <= 3)
+                    _buildSuggestions(),
+                  // ── Input bar ──
+                  _buildInputBar(),
+                ],
               ),
-              // ── Messages ──
-              Expanded(child: _buildMessageList()),
-              // ── Suggestions ──
-              if (!_isTyping && _messages.length <= 3)
-                _buildSuggestions(),
-              // ── Input bar ──
-              _buildInputBar(),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   // ─────────────────────────────────────────────
@@ -214,8 +194,7 @@ class _AiChatScreenState extends State<AiChatScreen>
           end: Alignment.bottomCenter,
           colors: [Color(0xFF130B2E), Colors.transparent],
         ),
-        border: Border(
-            bottom: BorderSide(color: Color(0x0DFFFFFF))),
+        border: Border(bottom: BorderSide(color: Color(0x0DFFFFFF))),
       ),
       child: Row(
         children: [
@@ -260,8 +239,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981)
-                            .withOpacity(0.12),
+                        color: const Color(0xFF10B981).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -276,8 +254,11 @@ class _AiChatScreenState extends State<AiChatScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text('Online',
-                              style: TextStyle(
+                          Text(
+                              _aiController.isAvailable.value
+                                  ? 'Online'
+                                  : 'Offline',
+                              style: const TextStyle(
                                 color: Color(0xFF10B981),
                                 fontSize: 9,
                                 fontWeight: FontWeight.w600,
@@ -306,15 +287,16 @@ class _AiChatScreenState extends State<AiChatScreen>
   //  MESSAGE LIST
   // ─────────────────────────────────────────────
   Widget _buildMessageList() {
+    final messages = _visibleMessages;
     return ListView.builder(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      itemCount: _messages.length,
+      itemCount: messages.length,
       itemBuilder: (ctx, i) {
         return _AnimatedMessageBubble(
-          message: _messages[i],
-          key: ValueKey(_messages[i].id),
+          message: messages[i],
+          key: ValueKey(messages[i].id),
         );
       },
     );
@@ -334,14 +316,12 @@ class _AiChatScreenState extends State<AiChatScreen>
         itemBuilder: (_, i) => GestureDetector(
           onTap: () => _sendMessage(_suggestions[i]),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: const Color(0xFF6366F1).withOpacity(0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color:
-                  const Color(0xFF6366F1).withOpacity(0.25)),
+              border:
+                  Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
             ),
             child: Text(
               _suggestions[i],
@@ -364,16 +344,14 @@ class _AiChatScreenState extends State<AiChatScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
       ),
       child: Container(
         constraints: const BoxConstraints(minHeight: 52),
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: const Color(0xFF6366F1).withOpacity(0.25)),
+          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -397,8 +375,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                  EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
                 cursorColor: const Color(0xFF6366F1),
                 textInputAction: TextInputAction.send,
@@ -416,8 +393,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                   const SizedBox(width: 6),
                   // Send button
                   GestureDetector(
-                    onTap: () =>
-                        _sendMessage(_inputController.text),
+                    onTap: () => _sendMessage(_inputController.text),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       width: 36,
@@ -425,16 +401,13 @@ class _AiChatScreenState extends State<AiChatScreen>
                       decoration: BoxDecoration(
                         color: _inputController.text.trim().isNotEmpty
                             ? const Color(0xFF6366F1)
-                            : const Color(0xFF6366F1)
-                            .withOpacity(0.15),
+                            : const Color(0xFF6366F1).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         Icons.send_rounded,
                         size: 16,
-                        color: _inputController.text
-                            .trim()
-                            .isNotEmpty
+                        color: _inputController.text.trim().isNotEmpty
                             ? Colors.white
                             : const Color(0xFF6366F1),
                       ),
@@ -458,8 +431,7 @@ class _AnimatedMessageBubble extends StatefulWidget {
   const _AnimatedMessageBubble({required this.message, super.key});
 
   @override
-  State<_AnimatedMessageBubble> createState() =>
-      _AnimatedMessageBubbleState();
+  State<_AnimatedMessageBubble> createState() => _AnimatedMessageBubbleState();
 }
 
 class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
@@ -476,12 +448,11 @@ class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
         vsync: this, duration: const Duration(milliseconds: 380));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
     _slide = Tween<Offset>(
-      begin: Offset(
-          widget.message.role == _Role.user ? 0.1 : -0.1, 0.05),
+      begin: Offset(widget.message.role == _Role.user ? 0.1 : -0.1, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
-    _scale = Tween<double>(begin: 0.92, end: 1.0).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _scale = Tween<double>(begin: 0.92, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
     _ctrl.forward();
   }
 
@@ -513,7 +484,7 @@ class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
 
     return Row(
       mainAxisAlignment:
-      isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         // AI avatar
@@ -545,10 +516,10 @@ class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
             decoration: BoxDecoration(
               gradient: isUser
                   ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-              )
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    )
                   : null,
               color: isUser ? null : const Color(0xFF1A2640),
               borderRadius: BorderRadius.only(
@@ -576,9 +547,7 @@ class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
           if (line.isEmpty) return const SizedBox(height: 6);
           return _RichLine(
             line: line,
-            color: isUser
-                ? Colors.white
-                : const Color(0xFFE2E8F0),
+            color: isUser ? Colors.white : const Color(0xFFE2E8F0),
           );
         }),
         const SizedBox(height: 4),
@@ -659,16 +628,15 @@ class _TypingIndicatorState extends State<_TypingIndicator>
     super.initState();
     _controllers = List.generate(
       3,
-          (i) => AnimationController(
+      (i) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 600),
       ),
     );
     _animations = _controllers
-        .map((c) =>
-        Tween<double>(begin: 0, end: -8).animate(
-          CurvedAnimation(parent: c, curve: Curves.easeInOut),
-        ))
+        .map((c) => Tween<double>(begin: 0, end: -8).animate(
+              CurvedAnimation(parent: c, curve: Curves.easeInOut),
+            ))
         .toList();
 
     // Stagger

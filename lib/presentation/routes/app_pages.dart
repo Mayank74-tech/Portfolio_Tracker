@@ -9,7 +9,6 @@ import '../bindings/profile_binding.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/auth/signup_screen.dart';
 import '../screens/dashboard/main_navigation_screen.dart';
 import '../screens/stock_detail/stock_detail_screen.dart';
 import '../screens/add_stock/add_stock_screen.dart';
@@ -18,12 +17,10 @@ import '../screens/ai_chat/ai_chat_screen.dart';
 import '../screens/market_news/market_news_screen.dart';
 import '../screens/market_news/news_detail_screen.dart';
 import '../screens/profile/profile_screen.dart';
-import '../screens/success/success_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
   static final pages = [
-
     // ─── SPLASH ──────────────────────────────────
     GetPage(
       name: AppRoutes.SPLASH,
@@ -40,7 +37,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.LOGIN,
       page: () => const LoginScreen(),
-      // binding: AuthBinding(),
+      binding: AuthBinding(),
     ),
     // GetPage(
     //   name: AppRoutes.SIGNUP,
@@ -52,7 +49,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.DASHBOARD,
       page: () => const MainNavigationScreen(child: DashboardScreen()),
-      // binding: DashboardBinding(),
+      binding: DashboardBinding(),
       transition: Transition.fadeIn,
     ),
 
@@ -60,7 +57,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.STOCK_DETAIL,
       page: () => const StockDetailScreen(),
-      // binding: StockDetailBinding(),
+      binding: StockDetailBinding(),
       transition: Transition.rightToLeft,
     ),
 
@@ -68,6 +65,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADD_STOCK,
       page: () => const AddStockScreen(),
+      binding: StockDetailBinding(),
       transition: Transition.downToUp,
     ),
 
@@ -82,7 +80,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.AI_CHAT,
       page: () => const MainNavigationScreen(child: AiChatScreen()),
-      // binding: AiChatBinding(),
+      binding: AiChatBinding(),
       // transition: Transition.rightToLeft,
       // preventDuplicates: true,
     ),
@@ -91,19 +89,19 @@ class AppPages {
     GetPage(
       name: AppRoutes.MARKET_NEWS,
       page: () => const MainNavigationScreen(child: MarketNewsScreen()),
-      // binding: NewsBinding(),
+      binding: NewsBinding(),
     ),
-    // GetPage(
-    //   name: AppRoutes.NEWS_DETAIL,
-    //   page: () => const NewsDetailScreen(),
-    //   transition: Transition.rightToLeft,
-    // ),
+    GetPage(
+      name: AppRoutes.NEWS_DETAIL,
+      page: () => const NewsDetailScreen(),
+      transition: Transition.rightToLeft,
+    ),
 
     // ─── PROFILE (with bottom nav) ───────────────
     GetPage(
       name: AppRoutes.PROFILE,
       page: () => const MainNavigationScreen(child: ProfileScreen()),
-      // binding: ProfileBinding(),
+      binding: ProfileBinding(),
     ),
 
     // ─── SUCCESS ─────────────────────────────────

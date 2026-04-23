@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smart_portfolio_tracker/firebase_options.dart';
 import 'package:smart_portfolio_tracker/app.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smart_portfolio_tracker/data/services/local/hive_service.dart';
 
 void main() async {
@@ -12,6 +13,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform, // ← add options
   );
   await HiveService.init(); // ← add this
+  await dotenv.load(fileName: ".env");
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

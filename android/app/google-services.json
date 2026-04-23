@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "996665433448-267ocv2m50cq17ntu199ti9og53augqi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smart_portfolio_tracker",
+            "certificate_hash": "f2f740825f480c59d47bce691bbfb4422238f285"
+          }
+        },
+        {
           "client_id": "996665433448-df7kff90am282m6238es4gksu0if979v.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -68,6 +68,7 @@ dependencies:
   logger: ^2.3.0
   equatable: ^2.0.5
 
+
   # ───────────────────────────────────────
   # WEBVIEW (for news articles)
   # ───────────────────────────────────────
@@ -81,9 +82,11 @@ dev_dependencies:
   flutter_lints: ^4.0.0
 
 
+
 flutter:
   uses-material-design: true
-#  assets:
-#    - assets/images/
-#    - assets/icons/
-#    - assets/animations/
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - .env

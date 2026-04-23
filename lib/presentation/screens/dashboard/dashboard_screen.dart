@@ -3,74 +3,6 @@ import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
 
-// ─────────────────────────────────────────────
-//  Mock data (replace with real controller data)
-// ─────────────────────────────────────────────
-class _MockHolding {
-  final String symbol;
-  final String name;
-  final String sector;
-  final String platform;
-  final double buyPrice;
-  final double currentPrice;
-  final double change;
-  final int qty;
-
-  const _MockHolding({
-    required this.symbol,
-    required this.name,
-    required this.sector,
-    required this.platform,
-    required this.buyPrice,
-    required this.currentPrice,
-    required this.change,
-    required this.qty,
-  });
-}
-
-const _mockHoldings = [
-  _MockHolding(
-    symbol: 'RELIANCE',
-    name: 'Reliance Industries Ltd',
-    sector: 'Energy',
-    platform: 'Zerodha',
-    buyPrice: 2400,
-    currentPrice: 2842.5,
-    change: 1.84,
-    qty: 10,
-  ),
-  _MockHolding(
-    symbol: 'INFY',
-    name: 'Infosys Ltd',
-    sector: 'IT',
-    platform: 'Groww',
-    buyPrice: 1500,
-    currentPrice: 1380,
-    change: -0.62,
-    qty: 15,
-  ),
-  _MockHolding(
-    symbol: 'HDFCBANK',
-    name: 'HDFC Bank Ltd',
-    sector: 'Banking',
-    platform: 'Angel One',
-    buyPrice: 1600,
-    currentPrice: 1724,
-    change: 0.94,
-    qty: 8,
-  ),
-  _MockHolding(
-    symbol: 'TCS',
-    name: 'Tata Consultancy Services',
-    sector: 'IT',
-    platform: 'Zerodha',
-    buyPrice: 3500,
-    currentPrice: 3842.5,
-    change: 2.10,
-    qty: 5,
-  ),
-];
-
 // Chart data points (7-day)
 class _ChartPoint {
   final String date;
@@ -78,15 +10,6 @@ class _ChartPoint {
   const _ChartPoint(this.date, this.value);
 }
 
-const _chartData = [
-  _ChartPoint('Mon', 318000),
-  _ChartPoint('Tue', 322000),
-  _ChartPoint('Wed', 315000),
-  _ChartPoint('Thu', 330000),
-  _ChartPoint('Fri', 326000),
-  _ChartPoint('Sat', 334000),
-  _ChartPoint('Sun', 341800),
-];
 
 // ─────────────────────────────────────────────
 //  Dashboard Screen
@@ -100,37 +23,32 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
+  late final PortfolioController _portfolioController;
   late final AnimationController _cardController;
   late final AnimationController _listController;
   late final Animation<double> _cardFade;
   late final Animation<Offset> _cardSlide;
 
-  // Computed totals
-  final double _totalValue = _mockHoldings.fold(
-      0, (s, h) => s + h.currentPrice * h.qty);
-  final double _totalInvested = _mockHoldings.fold(
-      0, (s, h) => s + h.buyPrice * h.qty);
-  final double _todayChange = 2300;
-  final double _todayChangePct = 1.84;
-
   @override
   void initState() {
     super.initState();
+    _portfolioController = Get.find<PortfolioController>();
     _cardController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
     _listController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
 
-    _cardFade = CurvedAnimation(
-        parent: _cardController, curve: Curves.easeIn);
-    _cardSlide = Tween<Offset>(
-        begin: const Offset(0, 0.12), end: Offset.zero)
+    _cardFade = CurvedAnimation(parent: _cardController, curve: Curves.easeIn);
+    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _cardController, curve: Curves.easeOutCubic));
+            parent: _cardController, curve: Curves.easeOutCubic));
 
     _cardController.forward();
-    Future.delayed(const Duration(milliseconds: 200),
-            () => _listController.forward());
+    Future.delayed(
+        const Duration(milliseconds: 200), () => _listController.forward());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _portfolioController.loadPortfolio();
+    });
   }
 
   @override
@@ -142,111 +60,162 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final totalPL = _totalValue - _totalInvested;
-    final totalPLPct = (totalPL / _totalInvested * 100);
+    return Obx(() {
+      final summary = _portfolioController.summary;
+      final holdings = _portfolioController.holdings;
+      final totalValue = _asDouble(summary['total_value']);
+      final totalInvested = _asDouble(summary['total_investment']);
+      final totalPL = _asDouble(summary['profit_loss']);
+      final totalPLPct = _asDouble(summary['profit_loss_percent']);
+      final todayChange = _asDouble(summary['today_change']);
+      final todayChangePct =
+          totalValue == 0 ? 0.0 : (todayChange / totalValue) * 100;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1120),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // ── Greeting header ──
-                  SliverToBoxAdapter(child: _buildHeader()),
+      // Inside build(), after existing summary variables:
+      final chartPoints = holdings.isEmpty
+          ? <_ChartPoint>[]
+          : holdings.asMap().entries.map((e) {
+        final symbol = (e.value['stock_symbol'] ?? e.value['symbol'] ?? '').toString();
+        final value = _asDouble(e.value['current_price'] ?? e.value['buy_price']) *
+            _asDouble(e.value['quantity']);
+        return _ChartPoint(symbol, value);
+      }).toList();
 
-                  // ── Portfolio summary card ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                      child: FadeTransition(
-                        opacity: _cardFade,
-                        child: SlideTransition(
-                          position: _cardSlide,
-                          child: _buildSummaryCard(
-                              totalPL, totalPLPct),
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B1120),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // ── Greeting header ──
+                    SliverToBoxAdapter(child: _buildHeader()),
+
+                    // ── Portfolio summary card ──
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: FadeTransition(
+                          opacity: _cardFade,
+                          child: SlideTransition(
+                            position: _cardSlide,
+                            child: _buildSummaryCard(
+                              totalValue: totalValue,
+                              totalInvested: totalInvested,
+                              totalPL: totalPL,
+                              totalPLPct: totalPLPct,
+                              todayChange: todayChange,
+                              todayChangePct: todayChangePct,
+                              holdingCount: holdings.length,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // ── Mini chart ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                      child: _buildChartCard(),
-                    ),
-                  ),
-
-                  // ── Quick actions ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                      child: _buildQuickActions(),
-                    ),
-                  ),
-
-                  // ── Holdings header ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'My Holdings',
-                            style: TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {},
-                            child: Row(
-                              children: const [
-                                Text(
-                                  'View All',
-                                  style: TextStyle(
-                                    color: Color(0xFF6366F1),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                SizedBox(width: 2),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: Color(0xFF6366F1),
-                                  size: 16,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    // ── Mini chart ──
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: _buildChartCard(chartPoints),
                       ),
                     ),
-                  ),
 
-                  // ── Holdings list ──
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                          (ctx, i) => _buildHoldingTile(
-                          _mockHoldings[i], i),
-                      childCount: _mockHoldings.length,
+                    // ── Quick actions ──
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                        child: _buildQuickActions(),
+                      ),
                     ),
-                  ),
 
-                  const SliverToBoxAdapter(
-                      child: SizedBox(height: 100)),
-                ],
+                    // ── Holdings header ──
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'My Holdings',
+                              style: TextStyle(
+                                color: Color(0xFF94A3B8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {},
+                              child: const Row(
+                                children: [
+                                  Text(
+                                    'View All',
+                                    style: TextStyle(
+                                      color: Color(0xFF6366F1),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: Color(0xFF6366F1),
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // ── Holdings list ──
+                    if (_portfolioController.isLoading.value)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF6366F1),
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (holdings.isEmpty)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No holdings yet. Add your first stock.',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (ctx, i) => _buildHoldingTile(holdings[i], i),
+                          childCount: holdings.length,
+                        ),
+                      ),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   // ─────────────────────────────────────────────
@@ -265,9 +234,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'Good morning 👋',
                 style: TextStyle(
@@ -331,10 +300,17 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ─────────────────────────────────────────────
   //  SUMMARY CARD
   // ─────────────────────────────────────────────
-  Widget _buildSummaryCard(double totalPL, double totalPLPct) {
+  Widget _buildSummaryCard({
+    required double totalValue,
+    required double totalInvested,
+    required double totalPL,
+    required double totalPLPct,
+    required double todayChange,
+    required double todayChangePct,
+    required int holdingCount,
+  }) {
     final isGain = totalPL >= 0;
-    final plColor =
-    isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final plColor = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -385,7 +361,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 6),
               // Value
               Text(
-                '₹${_formatInr(_totalValue, 0)}',
+                '₹${_formatInr(totalValue, 0)}',
                 style: const TextStyle(
                   color: Color(0xFFF1F5F9),
                   fontSize: 32,
@@ -400,13 +376,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                 children: [
                   _badge(
                     icon: Icons.trending_up_rounded,
-                    label: '+₹${_formatInr(_todayChange, 0)} Today',
+                    label:
+                        '${todayChange >= 0 ? "+" : "-"}₹${_formatInr(todayChange.abs(), 0)} Today',
                     color: const Color(0xFF10B981),
                     bg: const Color(0xFF10B981).withOpacity(0.15),
                   ),
                   const SizedBox(width: 8),
                   _badge(
-                    label: '+${_todayChangePct.toStringAsFixed(2)}%',
+                    label:
+                        '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}%',
                     color: const Color(0xFF10B981),
                     bg: const Color(0xFF10B981).withOpacity(0.10),
                   ),
@@ -422,8 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               // Bottom stats row
               Row(
                 children: [
-                  _statItem('Invested',
-                      '₹${_formatInr(_totalInvested, 0)}'),
+                  _statItem('Invested', '₹${_formatInr(totalInvested, 0)}'),
                   _vertDivider(),
                   _statItem(
                     'Total P&L',
@@ -431,8 +408,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     valueColor: plColor,
                   ),
                   _vertDivider(),
-                  _statItem(
-                      'Holdings', '${_mockHoldings.length} Stocks'),
+                  _statItem('Holdings', '$holdingCount Stocks'),
                 ],
               ),
             ],
@@ -463,9 +439,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
           Text(label,
               style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600)),
+                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -477,8 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(
-                  color: Color(0xFF64748B), fontSize: 11)),
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
           const SizedBox(height: 2),
           Text(value,
               style: TextStyle(
@@ -492,16 +465,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _vertDivider() => Container(
-    width: 1,
-    height: 28,
-    margin: const EdgeInsets.symmetric(horizontal: 8),
-    color: Colors.white.withOpacity(0.07),
-  );
+        width: 1,
+        height: 28,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        color: Colors.white.withOpacity(0.07),
+      );
 
   // ─────────────────────────────────────────────
   //  CHART CARD
   // ─────────────────────────────────────────────
-  Widget _buildChartCard() {
+  Widget _buildChartCard(List<_ChartPoint> chartPoints) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -515,11 +488,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Portfolio Performance',
-                  style: TextStyle(
-                      color: Color(0xFF94A3B8), fontSize: 13)),
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
               Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF6366F1).withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -535,8 +507,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           const SizedBox(height: 12),
           SizedBox(
             height: 100,
-            child: _MiniLineChart(data: _chartData),
-          ),
+            child: chartPoints.length < 2
+                ? const Center(
+              child: Text(
+                'Add 2+ stocks to see chart',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              ),
+            )
+                : _MiniLineChart(data: chartPoints),          ),
         ],
       ),
     );
@@ -547,12 +525,27 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ─────────────────────────────────────────────
   Widget _buildQuickActions() {
     final actions = [
-      (Icons.add_rounded, 'Add Stock', const Color(0xFF6366F1),
-      const Color(0xFF6366F1), AppRoutes.ADD_STOCK),
-      (Icons.upload_file_rounded, 'Import CSV', const Color(0xFF10B981),
-      const Color(0xFF10B981), AppRoutes.IMPORT_CSV),
-      (Icons.smart_toy_outlined, 'Ask AI', const Color(0xFFF59E0B),
-      const Color(0xFFF59E0B), AppRoutes.AI_CHAT),
+      (
+        Icons.add_rounded,
+        'Add Stock',
+        const Color(0xFF6366F1),
+        const Color(0xFF6366F1),
+        AppRoutes.ADD_STOCK
+      ),
+      (
+        Icons.upload_file_rounded,
+        'Import CSV',
+        const Color(0xFF10B981),
+        const Color(0xFF10B981),
+        AppRoutes.IMPORT_CSV
+      ),
+      (
+        Icons.smart_toy_outlined,
+        'Ask AI',
+        const Color(0xFFF59E0B),
+        const Color(0xFFF59E0B),
+        AppRoutes.AI_CHAT
+      ),
     ];
 
     return Column(
@@ -574,8 +567,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF111827),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.06)),
+                    border: Border.all(color: Colors.white.withOpacity(0.06)),
                   ),
                   child: Column(
                     children: [
@@ -586,8 +578,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           color: a.$3.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child:
-                        Icon(a.$1, color: a.$4, size: 18),
+                        child: Icon(a.$1, color: a.$4, size: 18),
                       ),
                       const SizedBox(height: 8),
                       Text(a.$2,
@@ -610,12 +601,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ─────────────────────────────────────────────
   //  HOLDING TILE
   // ─────────────────────────────────────────────
-  Widget _buildHoldingTile(_MockHolding h, int index) {
-    final isGain = h.currentPrice >= h.buyPrice;
+  Widget _buildHoldingTile(Map<String, dynamic> h, int index) {
+    final symbol = _asString(h['stock_symbol'] ?? h['symbol'], 'STK');
+    final sector = _asString(h['sector'], 'Stock');
+    final platform = _asString(h['platform'], 'Manual');
+    final buyPrice = _asDouble(h['buy_price']);
+    final currentPrice = _asDouble(h['current_price'] ?? h['buy_price']);
+    final qty = _asDouble(h['quantity']);
+    final isGain = currentPrice >= buyPrice;
     final plPct =
-    ((h.currentPrice - h.buyPrice) / h.buyPrice * 100);
+        buyPrice == 0 ? 0.0 : ((currentPrice - buyPrice) / buyPrice * 100);
     final gainColor =
-    isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+        isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return AnimatedBuilder(
       animation: _listController,
@@ -633,17 +630,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: GestureDetector(
         onTap: () => Get.toNamed(
           AppRoutes.STOCK_DETAIL,
-          arguments: {'symbol': h.symbol},
+          arguments: {'symbol': symbol},
         ),
         child: Container(
-          margin:
-          const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(18),
-            border:
-            Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: Row(
             children: [
@@ -657,7 +652,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 child: Center(
                   child: Text(
-                    h.symbol.substring(0, 3),
+                    symbol.substring(0, symbol.length < 3 ? symbol.length : 3),
                     style: TextStyle(
                       color: gainColor,
                       fontSize: 10,
@@ -670,13 +665,12 @@ class _DashboardScreenState extends State<DashboardScreen>
               // Info
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Text(
-                          h.symbol,
+                          symbol,
                           style: const TextStyle(
                             color: Color(0xFFF1F5F9),
                             fontSize: 14,
@@ -688,13 +682,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color:
-                            Colors.white.withOpacity(0.06),
-                            borderRadius:
-                            BorderRadius.circular(6),
+                            color: Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            h.platform,
+                            platform,
                             style: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 9,
@@ -706,7 +698,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${h.qty} shares · ${h.sector}',
+                      '${qty.toStringAsFixed(qty.truncateToDouble() == qty ? 0 : 2)} shares · $sector',
                       style: const TextStyle(
                         color: Color(0xFF64748B),
                         fontSize: 11,
@@ -717,11 +709,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
               // Price
               Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '₹${_formatInr(h.currentPrice, 1)}',
+                    '₹${_formatInr(currentPrice, 1)}',
                     style: const TextStyle(
                       color: Color(0xFFF1F5F9),
                       fontSize: 14,
@@ -769,14 +760,23 @@ class _DashboardScreenState extends State<DashboardScreen>
     String result = '';
     int count = 0;
     for (int i = intStr.length - 1; i >= 0; i--) {
-      if (count == 3 ||
-          (count > 3 && (count - 3) % 2 == 0)) {
+      if (count == 3 || (count > 3 && (count - 3) % 2 == 0)) {
         result = ',$result';
       }
       result = intStr[i] + result;
       count++;
     }
     return decimals > 0 ? '$result.${parts[1]}' : result;
+  }
+
+  static double _asDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _asString(Object? value, String fallback) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? fallback : text;
   }
 }
 
@@ -805,12 +805,14 @@ class _MiniLineChartPainter extends CustomPainter {
 
     final minV = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
     final maxV = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final range = maxV - minV;
+    // After
+    final rawRange = maxV - minV;
+    final range = rawRange < 1.0 ? 1.0 : rawRange;
     final padV = range * 0.15;
 
     List<Offset> points = [];
     for (int i = 0; i < data.length; i++) {
-      final x = i / (data.length - 1) * size.width;
+      final x = data.length == 1 ? size.width / 2 : i / (data.length - 1) * size.width;
       final y = size.height -
           ((data[i].value - minV + padV) / (range + padV * 2)) * size.height;
       points.add(Offset(x, y));
@@ -834,8 +836,8 @@ class _MiniLineChartPainter extends CustomPainter {
       ],
     );
     final fillPaint = Paint()
-      ..shader = gradient.createShader(
-          Rect.fromLTWH(0, 0, size.width, size.height));
+      ..shader =
+          gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(fillPath, fillPaint);
 
     // Line
@@ -863,13 +865,10 @@ class _MiniLineChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(
-          canvas,
-          Offset(points[i].dx - tp.width / 2,
-              size.height - tp.height));
+          canvas, Offset(points[i].dx - tp.width / 2, size.height - tp.height));
     }
   }
 
   @override
-  bool shouldRepaint(covariant _MiniLineChartPainter old) =>
-      old.data != data;
+  bool shouldRepaint(covariant _MiniLineChartPainter old) => old.data != data;
 }

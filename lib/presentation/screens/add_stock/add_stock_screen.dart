@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/stock_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 
-// ─────────────────────────────────────────────
-//  Mock search data (replace with StockController)
-// ─────────────────────────────────────────────
 class _SearchResult {
   final String symbol;
   final String name;
@@ -13,52 +12,12 @@ class _SearchResult {
   final double price;
   const _SearchResult(
       {required this.symbol,
-        required this.name,
-        required this.exchange,
-        required this.price});
+      required this.name,
+      required this.exchange,
+      required this.price});
 }
 
-const _searchResults = [
-  _SearchResult(
-      symbol: 'RELIANCE',
-      name: 'Reliance Industries Ltd',
-      exchange: 'NSE',
-      price: 2842.5),
-  _SearchResult(
-      symbol: 'TCS',
-      name: 'Tata Consultancy Services',
-      exchange: 'NSE',
-      price: 3842.5),
-  _SearchResult(
-      symbol: 'INFY',
-      name: 'Infosys Ltd',
-      exchange: 'NSE',
-      price: 1380.0),
-  _SearchResult(
-      symbol: 'HDFCBANK',
-      name: 'HDFC Bank Ltd',
-      exchange: 'NSE',
-      price: 1724.0),
-  _SearchResult(
-      symbol: 'WIPRO',
-      name: 'Wipro Ltd',
-      exchange: 'NSE',
-      price: 452.3),
-  _SearchResult(
-      symbol: 'TATASTEEL',
-      name: 'Tata Steel Ltd',
-      exchange: 'NSE',
-      price: 142.6),
-];
-
-const _platforms = [
-  'Zerodha',
-  'Groww',
-  'Angel One',
-  'Upstox',
-  'IIFL',
-  'Other'
-];
+const _platforms = ['Zerodha', 'Groww', 'Angel One', 'Upstox', 'IIFL', 'Other'];
 
 // ─────────────────────────────────────────────
 //  Add Stock Screen
@@ -74,6 +33,8 @@ enum _Stage { form, success }
 
 class _AddStockScreenState extends State<AddStockScreen>
     with TickerProviderStateMixin {
+  late final StockController _stockController;
+  late final PortfolioController _portfolioController;
   _Stage _stage = _Stage.form;
 
   // Form state
@@ -88,7 +49,6 @@ class _AddStockScreenState extends State<AddStockScreen>
   String _platform = 'Zerodha';
   DateTime _buyDate = DateTime(2025, 4, 3);
   bool _showDropdown = false;
-  bool _showPlatformSheet = false;
   List<_SearchResult> _filtered = [];
 
   // Animation controllers
@@ -110,6 +70,10 @@ class _AddStockScreenState extends State<AddStockScreen>
   @override
   void initState() {
     super.initState();
+    _stockController = Get.find<StockController>();
+    _portfolioController = Get.isRegistered<PortfolioController>()
+        ? Get.find<PortfolioController>()
+        : Get.put(PortfolioController());
     _initAnimations();
     _entranceCtrl.forward();
 
@@ -130,41 +94,46 @@ class _AddStockScreenState extends State<AddStockScreen>
     _checkCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
 
-    _entranceFade = CurvedAnimation(
-        parent: _entranceCtrl, curve: Curves.easeIn);
-    _entranceSlide = Tween<Offset>(
-        begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(
-        parent: _entranceCtrl, curve: Curves.easeOutCubic));
+    _entranceFade =
+        CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeIn);
+    _entranceSlide =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+            CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeOutCubic));
 
-    _dropdownHeight = CurvedAnimation(
-        parent: _dropdownCtrl, curve: Curves.easeOutCubic);
+    _dropdownHeight =
+        CurvedAnimation(parent: _dropdownCtrl, curve: Curves.easeOutCubic);
 
-    _previewFade = CurvedAnimation(
-        parent: _previewCtrl, curve: Curves.easeIn);
-    _previewSlide = Tween<Offset>(
-        begin: const Offset(0, 0.15), end: Offset.zero)
-        .animate(CurvedAnimation(
-        parent: _previewCtrl, curve: Curves.easeOutCubic));
+    _previewFade = CurvedAnimation(parent: _previewCtrl, curve: Curves.easeIn);
+    _previewSlide =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+            CurvedAnimation(parent: _previewCtrl, curve: Curves.easeOutCubic));
 
     _successScale = Tween<double>(begin: 0.5, end: 1.0).animate(
         CurvedAnimation(parent: _successCtrl, curve: Curves.elasticOut));
-    _successFade = CurvedAnimation(
-        parent: _successCtrl, curve: Curves.easeIn);
+    _successFade = CurvedAnimation(parent: _successCtrl, curve: Curves.easeIn);
 
-    _checkScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
+    _checkScale = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
   }
 
-  void _onSearchChanged() {
-    final q = _searchController.text.toLowerCase();
-    final results = q.isEmpty
-        ? <_SearchResult>[]
-        : _searchResults
-        .where((s) =>
-    s.symbol.toLowerCase().contains(q) ||
-        s.name.toLowerCase().contains(q))
+  Future<void> _onSearchChanged() async {
+    final q = _searchController.text.trim();
+    if (q.isEmpty) {
+      setState(() => _filtered = []);
+      _stockController.clearSearch();
+      return;
+    }
+
+    await _stockController.searchStocks(q);
+    final results = _stockController.searchResults
+        .map(_searchResultFromMap)
+        .where(
+          (s) =>
+              s.symbol.toLowerCase().contains(q.toLowerCase()) ||
+              s.name.toLowerCase().contains(q.toLowerCase()),
+        )
         .toList();
+
     setState(() => _filtered = results);
     if (results.isNotEmpty && !_showDropdown) {
       setState(() => _showDropdown = true);
@@ -177,8 +146,8 @@ class _AddStockScreenState extends State<AddStockScreen>
   }
 
   void _onNumberChanged() {
-    final hasData = _qtyController.text.isNotEmpty &&
-        _priceController.text.isNotEmpty;
+    final hasData =
+        _qtyController.text.isNotEmpty && _priceController.text.isNotEmpty;
     if (hasData) {
       _previewCtrl.forward();
     } else {
@@ -218,6 +187,34 @@ class _AddStockScreenState extends State<AddStockScreen>
   }
 
   Future<void> _handleAdd() async {
+    final selected = _selectedStock;
+    if (selected == null) return;
+
+    await _portfolioController.addHolding({
+      'stock_symbol': selected.symbol,
+      'stock_name': selected.name,
+      'exchange': selected.exchange,
+      'quantity': double.tryParse(_qtyController.text) ?? 0,
+      'buy_price': double.tryParse(_priceController.text) ?? 0,
+      'buy_date': _buyDate.toIso8601String(),
+      'platform': _platform,
+    });
+
+    // ✅ Check AFTER await — errorMessage is now populated if something failed
+    if (_portfolioController.errorMessage.value.isNotEmpty) {
+      Get.snackbar(
+        'Could not add stock',
+        _portfolioController.errorMessage.value,
+        backgroundColor: const Color(0xFF1E293B),
+        colorText: const Color(0xFFF1F5F9),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      _portfolioController.clearError();
+      return;
+    }
+
+    // ✅ No error = success
+    if (!mounted) return;
     setState(() => _stage = _Stage.success);
     _successCtrl.forward();
     await Future.delayed(const Duration(milliseconds: 200));
@@ -225,13 +222,48 @@ class _AddStockScreenState extends State<AddStockScreen>
     await Future.delayed(const Duration(milliseconds: 1800));
     if (mounted) Get.offNamed(AppRoutes.DASHBOARD);
   }
-
-  bool get _canAdd =>
-      _selectedStock != null && _qtyController.text.isNotEmpty;
+  bool get _canAdd => _selectedStock != null && _qtyController.text.isNotEmpty;
 
   double get _totalInvested =>
       (double.tryParse(_qtyController.text) ?? 0) *
-          (double.tryParse(_priceController.text) ?? 0);
+      (double.tryParse(_priceController.text) ?? 0);
+
+  _SearchResult _searchResultFromMap(Map<String, dynamic> data) {
+    final symbol = _firstString(data, ['symbol', 'displaySymbol', '1. symbol']);
+    final name = _firstString(
+      data,
+      ['description', 'name', 'companyName', '2. name'],
+      fallback: symbol,
+    );
+    final exchange = _firstString(
+      data,
+      ['exchange', 'type', '4. region'],
+      fallback: 'NSE',
+    );
+    return _SearchResult(
+      symbol: symbol,
+      name: name,
+      exchange: exchange,
+      price: _number(data['price'] ?? data['c']),
+    );
+  }
+
+  String _firstString(
+    Map<String, dynamic> data,
+    List<String> keys, {
+    String fallback = '',
+  }) {
+    for (final key in keys) {
+      final value = data[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return fallback;
+  }
+
+  double _number(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
 
   @override
   void dispose() {
@@ -276,8 +308,8 @@ class _AddStockScreenState extends State<AddStockScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF10B981).withOpacity(0.15),
-                    border: Border.all(
-                        color: const Color(0xFF10B981), width: 2),
+                    border:
+                        Border.all(color: const Color(0xFF10B981), width: 2),
                   ),
                   child: ScaleTransition(
                     scale: _checkScale,
@@ -327,7 +359,7 @@ class _AddStockScreenState extends State<AddStockScreen>
         FocusScope.of(context).unfocus();
         if (_showDropdown) {
           _dropdownCtrl.reverse().then(
-                  (_) => mounted ? setState(() => _showDropdown = false) : null);
+              (_) => mounted ? setState(() => _showDropdown = false) : null);
         }
       },
       child: Scaffold(
@@ -428,11 +460,11 @@ class _AddStockScreenState extends State<AddStockScreen>
             ),
             boxShadow: isActive
                 ? [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.12),
-                blurRadius: 12,
-              )
-            ]
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.12),
+                      blurRadius: 12,
+                    )
+                  ]
                 : null,
           ),
           child: Row(
@@ -466,8 +498,8 @@ class _AddStockScreenState extends State<AddStockScreen>
               if (_selectedStock != null)
                 Container(
                   margin: const EdgeInsets.only(right: 14),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -500,21 +532,18 @@ class _AddStockScreenState extends State<AddStockScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF1A2640),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: const Color(0xFF6366F1).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
       ),
       child: Column(
         children: _filtered.map((stock) {
           return GestureDetector(
             onTap: () => _selectStock(stock),
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 border: _filtered.indexOf(stock) > 0
                     ? Border(
-                    top: BorderSide(
-                        color: Colors.white.withOpacity(0.04)))
+                        top: BorderSide(color: Colors.white.withOpacity(0.04)))
                     : null,
               ),
               child: Row(
@@ -529,8 +558,8 @@ class _AddStockScreenState extends State<AddStockScreen>
                     ),
                     child: Center(
                       child: Text(
-                        stock.symbol.substring(0, 3),
-                        style: const TextStyle(
+                          stock.symbol.length >= 3 ? stock.symbol.substring(0, 3) : stock.symbol,
+                          style: const TextStyle(
                           color: Color(0xFF818CF8),
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -608,8 +637,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                 prefix: const Padding(
                   padding: EdgeInsets.only(right: 4),
                   child: Text('₹',
-                      style: TextStyle(
-                          color: Color(0xFF64748B), fontSize: 14)),
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
                 ),
               ),
             ],
@@ -708,8 +736,7 @@ class _AddStockScreenState extends State<AddStockScreen>
           color: Color(0xFF1A2640),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(
-            top: BorderSide(
-                color: Color(0xFF6366F1), width: 1),
+            top: BorderSide(color: Color(0xFF6366F1), width: 1),
           ),
         ),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -734,41 +761,40 @@ class _AddStockScreenState extends State<AddStockScreen>
                 )),
             const SizedBox(height: 16),
             ..._platforms.map((p) => GestureDetector(
-              onTap: () {
-                setState(() => _platform = p);
-                Navigator.pop(context);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                margin: const EdgeInsets.only(bottom: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: _platform == p
-                      ? const Color(0xFF6366F1).withOpacity(0.1)
-                      : Colors.transparent,
-                ),
-                child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(p,
-                        style: TextStyle(
-                          color: _platform == p
-                              ? const Color(0xFF818CF8)
-                              : const Color(0xFFF1F5F9),
-                          fontSize: 14,
-                          fontWeight: _platform == p
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        )),
-                    if (_platform == p)
-                      const Icon(Icons.check_rounded,
-                          size: 16, color: Color(0xFF6366F1)),
-                  ],
-                ),
-              ),
-            )),
+                  onTap: () {
+                    setState(() => _platform = p);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    margin: const EdgeInsets.only(bottom: 2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: _platform == p
+                          ? const Color(0xFF6366F1).withOpacity(0.1)
+                          : Colors.transparent,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(p,
+                            style: TextStyle(
+                              color: _platform == p
+                                  ? const Color(0xFF818CF8)
+                                  : const Color(0xFFF1F5F9),
+                              fontSize: 14,
+                              fontWeight: _platform == p
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            )),
+                        if (_platform == p)
+                          const Icon(Icons.check_rounded,
+                              size: 16, color: Color(0xFF6366F1)),
+                      ],
+                    ),
+                  ),
+                )),
           ],
         ),
       ),
@@ -790,8 +816,8 @@ class _AddStockScreenState extends State<AddStockScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF6366F1).withOpacity(0.08),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: const Color(0xFF6366F1).withOpacity(0.2)),
+                border:
+                    Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -835,8 +861,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: BoxDecoration(
-        border: Border(
-            top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
       ),
       child: GestureDetector(
         onTap: _canAdd ? _handleAdd : null,
@@ -847,37 +872,33 @@ class _AddStockScreenState extends State<AddStockScreen>
             borderRadius: BorderRadius.circular(18),
             gradient: _canAdd
                 ? const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-            )
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                  )
                 : null,
             color: _canAdd ? null : Colors.white.withOpacity(0.06),
             boxShadow: _canAdd
                 ? [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              )
-            ]
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    )
+                  ]
                 : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.add_rounded,
-                  color: _canAdd
-                      ? Colors.white
-                      : const Color(0xFF64748B),
+                  color: _canAdd ? Colors.white : const Color(0xFF64748B),
                   size: 20),
               const SizedBox(width: 8),
               Text(
                 'Add to Portfolio',
                 style: TextStyle(
-                  color: _canAdd
-                      ? Colors.white
-                      : const Color(0xFF64748B),
+                  color: _canAdd ? Colors.white : const Color(0xFF64748B),
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -890,8 +911,7 @@ class _AddStockScreenState extends State<AddStockScreen>
   }
 
   // ── Helpers ──
-  Widget _iconBtn(IconData icon, {VoidCallback? onTap}) =>
-      GestureDetector(
+  Widget _iconBtn(IconData icon, {VoidCallback? onTap}) => GestureDetector(
         onTap: onTap,
         child: Container(
           width: 36,
@@ -959,11 +979,11 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    text,
-    style: const TextStyle(
-      color: Color(0xFF94A3B8),
-      fontSize: 12,
-      fontWeight: FontWeight.w500,
-    ),
-  );
+        text,
+        style: const TextStyle(
+          color: Color(0xFF94A3B8),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      );
 }

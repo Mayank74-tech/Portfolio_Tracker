@@ -1,33 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
-import 'package:smart_portfolio_tracker/presentation/controllers/theme_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/auth_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/settings_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/theme_controller.dart';
 
 import '../../../data/services/local/hive_service.dart';
 
-// // ─────────────────────────────────────────────
-// //  Mock user data
-// // ─────────────────────────────────────────────
-// class _MockUser {
-//   final String name;
-//   final String email;
-//   final String avatarInitials;
-//   const _MockUser(
-//       {required this.name,
-//         required this.email,
-//         required this.avatarInitials});
-// }
-//
-// const _mockUser = _MockUser(
-//   name: 'Arjun Sharma',
-//   email: 'arjun@gmail.com',
-//   avatarInitials: 'AS',
-// );
-
-// ─────────────────────────────────────────────
-//  Profile Screen
-// ─────────────────────────────────────────────
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -37,38 +15,29 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  // Toggle states
-  bool _darkMode = true;
-  bool _notifications = true;
   bool _biometric = false;
-  String _currency = 'INR';
 
-  // ── Real Firebase user helpers ──
   AuthController get _auth => Get.find<AuthController>();
+  ThemeController get _themeController => Get.find<ThemeController>();
+  SettingsController get _settingsController => Get.find<SettingsController>();
 
-  // Hive first (instant, offline) → Firebase fallback
   String get _displayName =>
       HiveService.savedName ??
-          _auth.firebaseUser.value?.displayName ??
-          _auth.firebaseUser.value?.email?.split('@').first ??
-          'Investor';
+      _auth.firebaseUser.value?.displayName ??
+      _auth.firebaseUser.value?.email?.split('@').first ??
+      'Investor';
 
   String get _userEmail =>
-      HiveService.savedEmail ??
-          _auth.firebaseUser.value?.email ??
-          '';
+      HiveService.savedEmail ?? _auth.firebaseUser.value?.email ?? '';
 
   String get _initials {
     final parts = _displayName.trim().split(' ');
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return _displayName.isNotEmpty
-        ? _displayName[0].toUpperCase()
-        : 'U';
+    return _displayName.isNotEmpty ? _displayName[0].toUpperCase() : 'U';
   }
 
-  // Entrance animation
   late final AnimationController _entranceCtrl;
   late final Animation<double> _entranceFade;
   late final Animation<Offset> _entranceSlide;
@@ -77,13 +46,19 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _entranceCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
-    _entranceFade =
-        CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeIn);
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _entranceFade = CurvedAnimation(
+      parent: _entranceCtrl,
+      curve: Curves.easeIn,
+    );
     _entranceSlide = Tween<Offset>(
-        begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(
-        parent: _entranceCtrl, curve: Curves.easeOutCubic));
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeOutCubic),
+    );
     _entranceCtrl.forward();
   }
 
@@ -95,131 +70,145 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1120),
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _entranceFade,
-          child: SlideTransition(
-            position: _entranceSlide,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ── Header ──
-                SliverToBoxAdapter(child: _buildHeader()),
+    return Obx(() {
+      final currency = _settingsController.currency.value;
+      final notificationsEnabled =
+          _settingsController.notificationsEnabled.value;
+      final darkModeEnabled = _themeController.isDarkMode;
 
-                // ── Settings sections ──
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSection(
-                          label: 'PREFERENCES',
-                          rows: [
-                            _SettingRow(
-                              icon: Icons.language_rounded,
-                              label: 'Currency',
-                              subtitle: _currency == 'INR'
-                                  ? 'Indian Rupee (₹)'
-                                  : 'US Dollar (\$)',
-                              accentColor: const Color(0xFF10B981),
-                              onTap: () => setState(() => _currency =
-                              _currency == 'INR' ? 'USD' : 'INR'),
-                            ),
-                            _SettingRow(
-                              icon: Icons.dark_mode_outlined,
-                              label: 'Dark Mode',
-                              accentColor: const Color(0xFF6366F1),
-                              isToggle: true,
-                              toggled: _darkMode,
-                              onToggle: () =>
-                                  setState(() => _darkMode = !_darkMode),
-                            ),
-                            _SettingRow(
-                              icon: Icons.notifications_outlined,
-                              label: 'Notifications',
-                              subtitle: _notifications
-                                  ? 'Price alerts & news'
-                                  : 'Off',
-                              accentColor: const Color(0xFFF59E0B),
-                              isToggle: true,
-                              toggled: _notifications,
-                              onToggle: () => setState(
-                                      () => _notifications = !_notifications),
-                            ),
-                            _SettingRow(
-                              icon: Icons.fingerprint_rounded,
-                              label: 'Biometric Login',
-                              subtitle: 'Fingerprint & Face ID',
-                              accentColor: const Color(0xFF8B5CF6),
-                              isToggle: true,
-                              toggled: _biometric,
-                              onToggle: () =>
-                                  setState(() => _biometric = !_biometric),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        _buildSection(
-                          label: 'DATA & STORAGE',
-                          rows: [
-                            _SettingRow(
-                              icon: Icons.storage_outlined,
-                              label: 'Clear Cache',
-                              subtitle: 'Last cleared: 2 days ago',
-                              accentColor: const Color(0xFF06B6D4),
-                            ),
-                            _SettingRow(
-                              icon: Icons.download_outlined,
-                              label: 'Export Portfolio',
-                              subtitle: 'Download as CSV',
-                              accentColor: const Color(0xFF10B981),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        _buildSection(
-                          label: 'ABOUT',
-                          rows: [
-                            _SettingRow(
-                              icon: Icons.star_outline_rounded,
-                              label: 'Rate InvestIQ',
-                              accentColor: const Color(0xFFF59E0B),
-                            ),
-                            _SettingRow(
-                              icon: Icons.help_outline_rounded,
-                              label: 'Help & Support',
-                              accentColor: const Color(0xFF818CF8),
-                            ),
-                            _SettingRow(
-                              icon: Icons.info_outline_rounded,
-                              label: 'App Version',
-                              subtitle: 'v1.0.0 · Build 100',
-                              accentColor: const Color(0xFF64748B),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        // ── Sign out ──
-                        _buildSignOutButton(),
-                        const SizedBox(height: 80),
-                      ],
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B1120),
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _entranceFade,
+            child: SlideTransition(
+              position: _entranceSlide,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(child: _buildHeader()),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSection(
+                            label: 'PREFERENCES',
+                            rows: [
+                              _SettingRow(
+                                icon: Icons.language_rounded,
+                                label: 'Currency',
+                                subtitle: currency == 'USD'
+                                    ? 'US Dollar (\$)'
+                                    : 'Indian Rupee (₹)',
+                                accentColor: const Color(0xFF10B981),
+                                onTap: () => _settingsController.setCurrency(
+                                  currency == 'USD' ? 'INR' : 'USD',
+                                ),
+                              ),
+                              _SettingRow(
+                                icon: Icons.dark_mode_outlined,
+                                label: 'Dark Mode',
+                                accentColor: const Color(0xFF6366F1),
+                                isToggle: true,
+                                toggled: darkModeEnabled,
+                                onToggle: () => _themeController.toggleDarkMode(
+                                  !darkModeEnabled,
+                                ),
+                              ),
+                              _SettingRow(
+                                icon: Icons.notifications_outlined,
+                                label: 'Notifications',
+                                subtitle: notificationsEnabled
+                                    ? 'Price alerts & news'
+                                    : 'Off',
+                                accentColor: const Color(0xFFF59E0B),
+                                isToggle: true,
+                                toggled: notificationsEnabled,
+                                onToggle: () => _settingsController
+                                    .setNotificationsEnabled(
+                                  !notificationsEnabled,
+                                ),
+                              ),
+                              _SettingRow(
+                                icon: Icons.fingerprint_rounded,
+                                label: 'Biometric Login',
+                                subtitle: 'Fingerprint & Face ID',
+                                accentColor: const Color(0xFF8B5CF6),
+                                isToggle: true,
+                                toggled: _biometric,
+                                onToggle: () =>
+                                    setState(() => _biometric = !_biometric),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildSection(
+                            label: 'DATA & STORAGE',
+                            rows: [
+                              _SettingRow(
+                                icon: Icons.storage_outlined,
+                                label: 'Clear Cache',
+                                subtitle: 'Remove locally cached market data',
+                                accentColor: const Color(0xFF06B6D4),
+                                onTap: () async {
+                                  await _settingsController.clearCache();
+                                  if (!mounted) return;
+                                  Get.snackbar(
+                                    'Cache Cleared',
+                                    'Local market cache has been removed.',
+                                    backgroundColor: const Color(0xFF1E293B),
+                                    colorText: const Color(0xFFF1F5F9),
+                                  );
+                                },
+                              ),
+                              const _SettingRow(
+                                icon: Icons.download_outlined,
+                                label: 'Export Portfolio',
+                                subtitle: 'CSV export coming next',
+                                accentColor: Color(0xFF10B981),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildSection(
+                            label: 'ABOUT',
+                            rows: const [
+                              _SettingRow(
+                                icon: Icons.star_outline_rounded,
+                                label: 'Rate InvestIQ',
+                                accentColor: Color(0xFFF59E0B),
+                              ),
+                              _SettingRow(
+                                icon: Icons.help_outline_rounded,
+                                label: 'Help & Support',
+                                accentColor: Color(0xFF818CF8),
+                              ),
+                              _SettingRow(
+                                icon: Icons.info_outline_rounded,
+                                label: 'App Version',
+                                subtitle: 'v1.0.0 · Build 100',
+                                accentColor: Color(0xFF64748B),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          _buildSignOutButton(),
+                          const SizedBox(height: 80),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
-  // ─────────────────────────────────────────────
-  //  HEADER + USER CARD
-  // ─────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -242,7 +231,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           const SizedBox(height: 16),
-          // User card
           _buildUserCard(),
         ],
       ),
@@ -259,13 +247,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           end: Alignment.bottomRight,
           colors: [Color(0xFF1E1A4F), Color(0xFF0F0D2E)],
         ),
-        border: Border.all(
-          color: const Color(0xFF6366F1).withOpacity(0.2),
-        ),
+        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
       ),
       child: Stack(
         children: [
-          // Background glow
           Positioned(
             top: -20,
             right: -20,
@@ -283,13 +268,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
           ),
-
           Column(
             children: [
-              // Avatar + info row
               Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 62,
                     height: 62,
@@ -320,7 +302,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                   const SizedBox(width: 14),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,10 +323,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         const SizedBox(height: 6),
-                        // Premium badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF10B981).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
@@ -363,7 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                               const SizedBox(width: 5),
                               const Text(
-                                'Premium Account',
+                                'Active Account',
                                 style: TextStyle(
                                   color: Color(0xFF10B981),
                                   fontSize: 10,
@@ -376,45 +358,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ],
                     ),
                   ),
-
-                  // Edit button
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF6366F1).withOpacity(0.25),
-                      ),
-                    ),
-                    child: const Text(
-                      'Edit',
-                      style: TextStyle(
-                        color: Color(0xFF818CF8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 ],
               ),
-
               const SizedBox(height: 16),
               Container(
                 height: 1,
                 color: Colors.white.withOpacity(0.07),
               ),
               const SizedBox(height: 16),
-
-              // Stats row
               Row(
                 children: [
-                  _statItem('5', 'Stocks'),
+                  _statItem('Live', 'Sync'),
                   _statDivider(),
-                  _statItem('3', 'Platforms'),
+                  _statItem('Local', 'AI'),
                   _statDivider(),
-                  _statItem('Jan\'24', 'Since'),
+                  _statItem('Cloud', 'Backup'),
                 ],
               ),
             ],
@@ -424,40 +382,43 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _statItem(String value, String label) => Expanded(
-    child: Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFFF1F5F9),
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+  Widget _statItem(String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFFF1F5F9),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 10,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
-  Widget _statDivider() => Container(
-    width: 1,
-    height: 28,
-    color: Colors.white.withOpacity(0.07),
-  );
+  Widget _statDivider() {
+    return Container(
+      width: 1,
+      height: 28,
+      color: Colors.white.withOpacity(0.07),
+    );
+  }
 
-  // ─────────────────────────────────────────────
-  //  SETTINGS SECTION
-  // ─────────────────────────────────────────────
-  Widget _buildSection(
-      {required String label, required List<_SettingRow> rows}) {
+  Widget _buildSection({
+    required String label,
+    required List<_SettingRow> rows,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -480,12 +441,12 @@ class _ProfileScreenState extends State<ProfileScreen>
             border: Border.all(color: Colors.white.withOpacity(0.06)),
           ),
           child: Column(
-            children: rows.asMap().entries.map((e) {
-              final i = e.key;
-              final row = e.value;
+            children: rows.asMap().entries.map((entry) {
+              final index = entry.key;
+              final row = entry.value;
               return Column(
                 children: [
-                  if (i > 0)
+                  if (index > 0)
                     Container(
                       height: 1,
                       color: Colors.white.withOpacity(0.04),
@@ -502,14 +463,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildSettingRow(_SettingRow row) {
     return GestureDetector(
-      onTap: row.isToggle
-          ? row.onToggle
-          : row.onTap ?? () {},
+      onTap: row.isToggle ? row.onToggle : row.onTap ?? () {},
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            // Icon box
             Container(
               width: 36,
               height: 36,
@@ -528,8 +486,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
             const SizedBox(width: 12),
-
-            // Label + subtitle
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,25 +513,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
             ),
-
-            // Toggle or chevron
             if (row.isToggle)
               _AnimatedToggle(
                 value: row.toggled ?? false,
                 onChanged: row.onToggle ?? () {},
               )
             else
-              const Icon(Icons.chevron_right_rounded,
-                  size: 16, color: Color(0xFF475569)),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: Color(0xFF475569),
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  SIGN OUT BUTTON
-  // ─────────────────────────────────────────────
   Widget _buildSignOutButton() {
     return GestureDetector(
       onTap: () => Get.find<AuthController>().logout(),
@@ -584,15 +538,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         decoration: BoxDecoration(
           color: const Color(0xFFEF4444).withOpacity(0.08),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: const Color(0xFFEF4444).withOpacity(0.2),
-          ),
+          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: const [
-            Icon(Icons.logout_rounded,
-                color: Color(0xFFEF4444), size: 20),
+            Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 20),
             SizedBox(width: 10),
             Text(
               'Sign Out',
@@ -609,9 +560,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 }
 
-// ─────────────────────────────────────────────
-//  Setting row data model
-// ─────────────────────────────────────────────
 class _SettingRow {
   final IconData icon;
   final String label;
@@ -636,14 +584,14 @@ class _SettingRow {
   });
 }
 
-// ─────────────────────────────────────────────
-//  Animated toggle switch
-// ─────────────────────────────────────────────
 class _AnimatedToggle extends StatefulWidget {
   final bool value;
   final VoidCallback onChanged;
-  const _AnimatedToggle(
-      {required this.value, required this.onChanged});
+
+  const _AnimatedToggle({
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   State<_AnimatedToggle> createState() => _AnimatedToggleState();
@@ -652,8 +600,6 @@ class _AnimatedToggle extends StatefulWidget {
 class _AnimatedToggleState extends State<_AnimatedToggle>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double> _thumbPos;
-  late final Animation<Color?> _trackColor;
 
   @override
   void initState() {
@@ -663,18 +609,12 @@ class _AnimatedToggleState extends State<_AnimatedToggle>
       duration: const Duration(milliseconds: 220),
       value: widget.value ? 1.0 : 0.0,
     );
-    _thumbPos = Tween<double>(begin: 2, end: 22).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-    _trackColor = ColorTween(
-      begin: const Color(0xFF1E293B),
-      end: const Color(0xFF6366F1),
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
-  void didUpdateWidget(covariant _AnimatedToggle old) {
-    super.didUpdateWidget(old);
-    if (widget.value != old.value) {
+  void didUpdateWidget(covariant _AnimatedToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value != oldWidget.value) {
       widget.value ? _ctrl.forward() : _ctrl.reverse();
     }
   }
@@ -689,48 +629,47 @@ class _AnimatedToggleState extends State<_AnimatedToggle>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onChanged,
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (_, __) => Container(
-          width: 46,
-          height: 26,
-          decoration: BoxDecoration(
-            color: _trackColor.value,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: widget.value
-                  ? const Color(0xFF6366F1)
-                  : Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        width: 46,
+        height: 26,
+        decoration: BoxDecoration(
+          color: widget.value
+              ? const Color(0xFF6366F1)
+              : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: widget.value
+                ? const Color(0xFF6366F1)
+                : Colors.white.withOpacity(0.1),
+            width: 1,
           ),
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                left: widget.value ? 22 : 2,
-                top: 2,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: widget.value
-                        ? Colors.white
-                        : const Color(0xFF64748B),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOut,
+              left: widget.value ? 22 : 2,
+              top: 2,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color:
+                      widget.value ? Colors.white : const Color(0xFF64748B),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
