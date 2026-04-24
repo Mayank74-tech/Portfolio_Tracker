@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 // All route name constants in one place
 
 class AppRoutes {
@@ -14,5 +16,4 @@ class AppRoutes {
   static const String NEWS_DETAIL = '/news-detail';
   static const String PROFILE = '/profile';
   static const String SUCCESS = '/success';
-
 }

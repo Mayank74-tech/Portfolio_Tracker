@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/widgets/common/bottom_nav_bar.dart';
-import 'package:smart_portfolio_tracker/presentation/controllers/theme_controller.dart';
 
 class MainNavigationScreen extends StatelessWidget {
   final Widget child;

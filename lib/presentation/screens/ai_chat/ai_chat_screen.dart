@@ -33,7 +33,7 @@ class _Message {
 
 // Initial messages
 final _initialMessages = [
-  _Message(
+  const _Message(
     id: 1,
     role: _Role.ai,
     text:
@@ -121,7 +121,7 @@ class _AiChatScreenState extends State<AiChatScreen>
     final messages = [..._initialMessages, ...controllerMessages];
     if (_aiController.isLoading.value) {
       messages.add(
-        _Message(
+        const _Message(
           id: -1,
           role: _Role.ai,
           text: '',
@@ -211,7 +211,7 @@ class _AiChatScreenState extends State<AiChatScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6366F1).withOpacity(0.3),
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -239,7 +239,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.12),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -318,10 +318,10 @@ class _AiChatScreenState extends State<AiChatScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.12),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border:
-                  Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
+              border: Border.all(
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
             ),
             child: Text(
               _suggestions[i],
@@ -344,14 +344,16 @@ class _AiChatScreenState extends State<AiChatScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: Container(
         constraints: const BoxConstraints(minHeight: 52),
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.25)),
+          border: Border.all(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -401,7 +403,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                       decoration: BoxDecoration(
                         color: _inputController.text.trim().isNotEmpty
                             ? const Color(0xFF6366F1)
-                            : const Color(0xFF6366F1).withOpacity(0.15),
+                            : const Color(0xFF6366F1).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -555,7 +557,7 @@ class _AnimatedMessageBubbleState extends State<_AnimatedMessageBubble>
           widget.message.time,
           style: TextStyle(
             color: isUser
-                ? Colors.white.withOpacity(0.5)
+                ? Colors.white.withValues(alpha: 0.5)
                 : const Color(0xFF475569),
             fontSize: 10,
           ),

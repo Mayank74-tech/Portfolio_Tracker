@@ -222,6 +222,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     await Future.delayed(const Duration(milliseconds: 1800));
     if (mounted) Get.offNamed(AppRoutes.DASHBOARD);
   }
+
   bool get _canAdd => _selectedStock != null && _qtyController.text.isNotEmpty;
 
   double get _totalInvested =>
@@ -307,7 +308,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                   height: 86,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     border:
                         Border.all(color: const Color(0xFF10B981), width: 2),
                   ),
@@ -416,9 +417,9 @@ class _AddStockScreenState extends State<AddStockScreen>
         children: [
           _iconBtn(Icons.chevron_left_rounded, onTap: () => Get.back()),
           const SizedBox(width: 12),
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text('Add Stock',
                   style: TextStyle(
                     color: Color(0xFFF1F5F9),
@@ -454,14 +455,14 @@ class _AddStockScreenState extends State<AddStockScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isActive || _showDropdown
-                  ? const Color(0xFF6366F1).withOpacity(0.5)
-                  : Colors.white.withOpacity(0.08),
+                  ? const Color(0xFF6366F1).withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.08),
               width: 1.2,
             ),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF6366F1).withOpacity(0.12),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
                       blurRadius: 12,
                     )
                   ]
@@ -501,7 +502,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(Icons.check_rounded,
@@ -532,7 +533,8 @@ class _AddStockScreenState extends State<AddStockScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF1A2640),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+        border:
+            Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
       child: Column(
         children: _filtered.map((stock) {
@@ -543,7 +545,8 @@ class _AddStockScreenState extends State<AddStockScreen>
               decoration: BoxDecoration(
                 border: _filtered.indexOf(stock) > 0
                     ? Border(
-                        top: BorderSide(color: Colors.white.withOpacity(0.04)))
+                        top: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.04)))
                     : null,
               ),
               child: Row(
@@ -553,13 +556,15 @@ class _AddStockScreenState extends State<AddStockScreen>
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withOpacity(0.12),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
                       child: Text(
-                          stock.symbol.length >= 3 ? stock.symbol.substring(0, 3) : stock.symbol,
-                          style: const TextStyle(
+                        stock.symbol.length >= 3
+                            ? stock.symbol.substring(0, 3)
+                            : stock.symbol,
+                        style: const TextStyle(
                           color: Color(0xFF818CF8),
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -662,7 +667,7 @@ class _AddStockScreenState extends State<AddStockScreen>
             decoration: BoxDecoration(
               color: const Color(0xFF131D2E),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Row(
               children: [
@@ -704,7 +709,7 @@ class _AddStockScreenState extends State<AddStockScreen>
               color: const Color(0xFF131D2E),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
               ),
             ),
             child: Row(
@@ -749,7 +754,7 @@ class _AddStockScreenState extends State<AddStockScreen>
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -772,7 +777,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: _platform == p
-                          ? const Color(0xFF6366F1).withOpacity(0.1)
+                          ? const Color(0xFF6366F1).withValues(alpha: 0.1)
                           : Colors.transparent,
                     ),
                     child: Row(
@@ -814,10 +819,10 @@ class _AddStockScreenState extends State<AddStockScreen>
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withOpacity(0.08),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+                border: Border.all(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,7 +866,8 @@ class _AddStockScreenState extends State<AddStockScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: GestureDetector(
         onTap: _canAdd ? _handleAdd : null,
@@ -877,11 +883,11 @@ class _AddStockScreenState extends State<AddStockScreen>
                     colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
                   )
                 : null,
-            color: _canAdd ? null : Colors.white.withOpacity(0.06),
+            color: _canAdd ? null : Colors.white.withValues(alpha: 0.06),
             boxShadow: _canAdd
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF6366F1).withOpacity(0.35),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.35),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     )
@@ -919,7 +925,7 @@ class _AddStockScreenState extends State<AddStockScreen>
           decoration: BoxDecoration(
             color: const Color(0xFF131D2E),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
         ),
@@ -939,7 +945,7 @@ class _AddStockScreenState extends State<AddStockScreen>
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [

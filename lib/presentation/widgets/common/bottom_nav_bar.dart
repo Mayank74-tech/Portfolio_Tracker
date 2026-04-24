@@ -10,17 +10,30 @@ class BottomNavBar extends StatelessWidget {
     final String currentPath = Get.currentRoute;
 
     final tabs = [
-      _NavTab(icon: Icons.home_rounded, label: 'Home', path: RouteConstants.dashboard),
-      _NavTab(icon: Icons.smart_toy_rounded, label: 'AI', path: RouteConstants.aiChat),
-      _NavTab(icon: Icons.trending_up_rounded, label: 'Market', path: RouteConstants.marketNews),
-      _NavTab(icon: Icons.person_rounded, label: 'Profile', path: RouteConstants.profile),
+      const _NavTab(
+          icon: Icons.home_rounded,
+          label: 'Home',
+          path: RouteConstants.dashboard),
+      const _NavTab(
+          icon: Icons.smart_toy_rounded,
+          label: 'AI',
+          path: RouteConstants.aiChat),
+      const _NavTab(
+          icon: Icons.trending_up_rounded,
+          label: 'Market',
+          path: RouteConstants.marketNews),
+      const _NavTab(
+          icon: Icons.person_rounded,
+          label: 'Profile',
+          path: RouteConstants.profile),
     ];
 
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.06), width: 1),
+          top:
+              BorderSide(color: Colors.white.withValues(alpha: 0.06), width: 1),
         ),
       ),
       child: SafeArea(
@@ -50,7 +63,7 @@ class _NavTab {
 class _NavItem extends StatelessWidget {
   final _NavTab tab;
   final bool isActive;
-  const _NavItem({super.key, required this.tab, required this.isActive});
+  const _NavItem({required this.tab, required this.isActive});
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +86,7 @@ class _NavItem extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: isActive
-                    ? activeColor.withOpacity(0.15)
+                    ? activeColor.withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),

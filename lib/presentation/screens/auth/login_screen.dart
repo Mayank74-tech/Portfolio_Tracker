@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/auth_controller.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({
+    super.key,
+    this.initialIsLogin = true,
+  });
+
+  final bool initialIsLogin;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -13,7 +17,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   // ── State ──
-  bool _isLogin = true;
+  late bool _isLogin;
   bool _showPassword = false;
   final _emailController = TextEditingController(text: '');
   final _passwordController = TextEditingController(text: '');
@@ -41,12 +45,15 @@ class _LoginScreenState extends State<LoginScreen>
   late final Animation<Offset> _formSlide;
   late final Animation<double> _nameFieldHeight;
   late final Animation<double> _nameFieldOpacity;
-  late final Animation<double> _buttonScale;
 
   @override
   void initState() {
     super.initState();
+    _isLogin = widget.initialIsLogin;
     _initAnimations();
+    if (!_isLogin) {
+      _nameFieldController.value = 1;
+    }
     _initFocusListeners();
     _playEntrance();
   }
@@ -99,10 +106,6 @@ class _LoginScreenState extends State<LoginScreen>
         parent: _nameFieldController,
         curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
       ),
-    );
-
-    _buttonScale = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _buttonController, curve: Curves.easeIn),
     );
   }
 
@@ -244,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6366F1).withOpacity(0.4),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.4),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -297,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen>
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -313,32 +316,27 @@ class _LoginScreenState extends State<LoginScreen>
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF6366F1)
-                      : Colors.transparent,
+                  color:
+                      isActive ? const Color(0xFF6366F1) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: isActive
                       ? [
-                    BoxShadow(
-                      color:
-                      const Color(0xFF6366F1).withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
+                          BoxShadow(
+                            color:
+                                const Color(0xFF6366F1).withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isActive
-                        ? Colors.white
-                        : const Color(0xFF64748B),
+                    color: isActive ? Colors.white : const Color(0xFF64748B),
                     fontSize: 14,
-                    fontWeight: isActive
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -434,7 +432,9 @@ class _LoginScreenState extends State<LoginScreen>
               // ── Error message ──
               Obx(() {
                 final ctrl = Get.find<AuthController>();
-                if (ctrl.errorMessage.value.isEmpty) return const SizedBox.shrink();
+                if (ctrl.errorMessage.value.isEmpty) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 12, bottom: 4),
                   child: Text(
@@ -471,7 +471,8 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withOpacity(0.38),
+                          color:
+                              const Color(0xFF6366F1).withValues(alpha: 0.38),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -481,27 +482,27 @@ class _LoginScreenState extends State<LoginScreen>
                       final ctrl = Get.find<AuthController>();
                       return ctrl.isLoading.value
                           ? const CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2.5)
+                              color: Colors.white, strokeWidth: 2.5)
                           : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _isLogin ? 'Sign In' : 'Create Account',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ],
-                      );
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _isLogin ? 'Sign In' : 'Create Account',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ],
+                            );
                     }),
                   ),
                 ),
@@ -515,15 +516,15 @@ class _LoginScreenState extends State<LoginScreen>
                   Expanded(
                     child: Container(
                       height: 1,
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'OR CONTINUE WITH',
                       style: TextStyle(
-                        color: const Color(0xFF475569),
+                        color: Color(0xFF475569),
                         fontSize: 11,
                         letterSpacing: 0.8,
                         fontWeight: FontWeight.w500,
@@ -533,7 +534,7 @@ class _LoginScreenState extends State<LoginScreen>
                   Expanded(
                     child: Container(
                       height: 1,
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                     ),
                   ),
                 ],
@@ -550,7 +551,7 @@ class _LoginScreenState extends State<LoginScreen>
                     color: const Color(0xFF131D2E),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(
@@ -594,8 +595,8 @@ class _LoginScreenState extends State<LoginScreen>
     final borderColor = isActive
         ? const Color(0xFF6366F1)
         : accentBorder
-        ? const Color(0xFF6366F1).withOpacity(0.4)
-        : Colors.white.withOpacity(0.08);
+            ? const Color(0xFF6366F1).withValues(alpha: 0.4)
+            : Colors.white.withValues(alpha: 0.08);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,12 +619,12 @@ class _LoginScreenState extends State<LoginScreen>
             border: Border.all(color: borderColor, width: 1.2),
             boxShadow: isActive
                 ? [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.12),
-                blurRadius: 12,
-                spreadRadius: 0,
-              ),
-            ]
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      spreadRadius: 0,
+                    ),
+                  ]
                 : null,
           ),
           child: Row(
@@ -662,8 +663,7 @@ class _LoginScreenState extends State<LoginScreen>
               ),
               if (isPassword)
                 GestureDetector(
-                  onTap: () =>
-                      setState(() => _showPassword = !_showPassword),
+                  onTap: () => setState(() => _showPassword = !_showPassword),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 16),
                     child: Icon(

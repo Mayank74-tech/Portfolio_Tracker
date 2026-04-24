@@ -29,13 +29,13 @@ class _OnboardingSlide {
 }
 
 final _slides = [
-  _OnboardingSlide(
+  const _OnboardingSlide(
     title: 'Track All Investments',
     subtitle: 'ACROSS PLATFORMS',
     description:
-    'Connect Zerodha, Groww, Angel One and more. View your entire portfolio across all brokers in one beautiful dashboard.',
-    accentColor: const Color(0xFF6366F1),
-    accentColorLight: const Color(0xFF818CF8),
+        'Connect Zerodha, Groww, Angel One and more. View your entire portfolio across all brokers in one beautiful dashboard.',
+    accentColor: Color(0xFF6366F1),
+    accentColorLight: Color(0xFF818CF8),
     icon: Icons.bar_chart_rounded,
     bars: [65, 85, 45, 90, 70, 55, 80],
     barColors: [
@@ -44,13 +44,13 @@ final _slides = [
       Color(0xFFC7D2FE),
     ],
   ),
-  _OnboardingSlide(
+  const _OnboardingSlide(
     title: 'AI-Powered Insights',
     subtitle: 'UNDERSTAND INSTANTLY',
     description:
-    'Ask questions about your portfolio in plain language. Get instant AI analysis powered by Llama 3 running locally on your device.',
-    accentColor: const Color(0xFF10B981),
-    accentColorLight: const Color(0xFF34D399),
+        'Ask questions about your portfolio in plain language. Get instant AI analysis powered by Llama 3 running locally on your device.',
+    accentColor: Color(0xFF10B981),
+    accentColorLight: Color(0xFF34D399),
     icon: Icons.psychology_rounded,
     bars: [40, 75, 60, 85, 50, 90, 65],
     barColors: [
@@ -59,13 +59,13 @@ final _slides = [
       Color(0xFF6EE7B7),
     ],
   ),
-  _OnboardingSlide(
+  const _OnboardingSlide(
     title: 'Make Smarter Decisions',
     subtitle: 'GROW YOUR WEALTH',
     description:
-    'Get AI-driven recommendations, sector diversification tips, and actionable insights to achieve your financial goals.',
-    accentColor: const Color(0xFFF59E0B),
-    accentColorLight: const Color(0xFFFCD34D),
+        'Get AI-driven recommendations, sector diversification tips, and actionable insights to achieve your financial goals.',
+    accentColor: Color(0xFFF59E0B),
+    accentColorLight: Color(0xFFFCD34D),
     icon: Icons.track_changes_rounded,
     bars: [50, 60, 75, 85, 90, 88, 95],
     barColors: [
@@ -138,7 +138,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       begin: const Offset(0, 0.12),
       end: Offset.zero,
     ).animate(
-      CurvedAnimation(parent: _slideEnterController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+          parent: _slideEnterController, curve: Curves.easeOutCubic),
     );
     _barScale = CurvedAnimation(
       parent: _barsController,
@@ -243,7 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             center: const Alignment(0, -0.3),
             radius: 1.0,
             colors: [
-              slide.accentColor.withOpacity(_bgGlow.value),
+              slide.accentColor.withValues(alpha: _bgGlow.value),
               Colors.transparent,
             ],
           ),
@@ -274,10 +275,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   width: 1,
                 ),
               ),
@@ -326,9 +327,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       height: size.height * 0.30,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         border: Border.all(
-          color: slide.accentColor.withOpacity(0.15),
+          color: slide.accentColor.withValues(alpha: 0.15),
           width: 1,
         ),
       ),
@@ -346,7 +347,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      slide.accentColor.withOpacity(0.12),
+                      slide.accentColor.withValues(alpha: 0.12),
                       Colors.transparent,
                     ],
                   ),
@@ -375,14 +376,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   height: 68,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    color: slide.accentColor.withOpacity(0.15),
+                    color: slide.accentColor.withValues(alpha: 0.15),
                     border: Border.all(
-                      color: slide.accentColor.withOpacity(0.3),
+                      color: slide.accentColor.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: slide.accentColor.withOpacity(0.2),
+                        color: slide.accentColor.withValues(alpha: 0.2),
                         blurRadius: 20,
                         spreadRadius: 0,
                       ),
@@ -402,7 +403,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           Positioned.fill(
             child: CustomPaint(
               painter: _GridPainter(
-                color: slide.accentColor.withOpacity(0.05),
+                color: slide.accentColor.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -425,8 +426,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             final normalised = slide.bars[i] / maxBar;
             final isMax = slide.bars[i] == maxBar;
             final delay = (i / slide.bars.length);
-            final progress = math.max(0.0,
-                math.min(1.0, (_barScale.value - delay) / (1 - delay)));
+            final progress = math.max(
+                0.0, math.min(1.0, (_barScale.value - delay) / (1 - delay)));
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -438,7 +439,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
-                        color: slide.accentColor.withOpacity(0.2),
+                        color: slide.accentColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -455,7 +456,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   const SizedBox(height: 20),
                 ClipRRect(
                   borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(6)),
+                      const BorderRadius.vertical(top: Radius.circular(6)),
                   child: AnimatedContainer(
                     duration: Duration(milliseconds: 300 + i * 60),
                     width: 20,
@@ -467,11 +468,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         colors: isMax
                             ? [slide.accentColorLight, slide.accentColor]
                             : [
-                          slide.accentColor.withOpacity(
-                              0.15 + (i % 3) * 0.08),
-                          slide.accentColor.withOpacity(
-                              0.08 + (i % 3) * 0.05),
-                        ],
+                                slide.accentColor
+                                    .withValues(alpha: 0.15 + (i % 3) * 0.08),
+                                slide.accentColor
+                                    .withValues(alpha: 0.08 + (i % 3) * 0.05),
+                              ],
                       ),
                     ),
                   ),
@@ -490,13 +491,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       children: [
         // Subtitle chip
         Container(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: slide.accentColor.withOpacity(0.12),
+            color: slide.accentColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: slide.accentColor.withOpacity(0.25),
+              color: slide.accentColor.withValues(alpha: 0.25),
               width: 1,
             ),
           ),
@@ -562,16 +562,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 decoration: BoxDecoration(
                   color: isActive
                       ? slide.accentColor
-                      : Colors.white.withOpacity(0.15),
+                      : Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: isActive
                       ? [
-                    BoxShadow(
-                      color: slide.accentColor.withOpacity(0.5),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
+                          BoxShadow(
+                            color: slide.accentColor.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ]
                       : null,
                 ),
               );
@@ -599,8 +599,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (isLast ? slide.accentColor : const Color(0xFF6366F1))
-                          .withOpacity(0.35),
+                      color:
+                          (isLast ? slide.accentColor : const Color(0xFF6366F1))
+                              .withValues(alpha: 0.35),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),

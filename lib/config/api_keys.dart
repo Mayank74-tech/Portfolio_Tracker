@@ -13,4 +13,6 @@ class ApiKeys {
       dotenv.env['OLLAMA_BASE_URL'] ?? 'http://localhost:11434';
 
   static String get ollamaModel => dotenv.env['OLLAMA_MODEL'] ?? 'llama3';
+
+  static String get geminiApiKey => (dotenv.env['GEMINI_API_KEY'] ?? '').trim();
 }

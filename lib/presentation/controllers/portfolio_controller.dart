@@ -96,6 +96,7 @@ class PortfolioController extends GetxController {
       isSaving.value = false;
     }
   }
+
   static Map<String, dynamic> _stringKeyedMap(Map value) =>
       value.map((key, data) => MapEntry(key.toString(), data));
 }

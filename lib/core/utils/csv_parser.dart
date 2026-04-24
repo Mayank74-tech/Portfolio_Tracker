@@ -212,7 +212,8 @@ class _HeaderIndexes {
         ['buy_date', 'buy date', 'purchase_date', 'date', 'transaction_date'],
       ),
       platform: findOptional(['platform', 'broker', 'broker_name']),
-      stockName: findOptional(['stock_name', 'name', 'company', 'company_name']),
+      stockName:
+          findOptional(['stock_name', 'name', 'company', 'company_name']),
       exchange: findOptional(['exchange', 'market']),
     );
   }

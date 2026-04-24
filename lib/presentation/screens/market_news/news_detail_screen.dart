@@ -135,7 +135,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                 colors: [Color(0xFF1E1A4F), Color(0xFF0F0D2E)],
               ),
               border: Border.all(
-                color: const Color(0xFF6366F1).withOpacity(0.2),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -149,7 +149,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.15),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -226,7 +226,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +242,8 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
           const SizedBox(height: 12),
           _metaRow('Source', _source),
           _metaRow('Published', _publishedAt),
-          _metaRow('Linked article', _url.isEmpty ? 'Unavailable' : 'Available'),
+          _metaRow(
+              'Linked article', _url.isEmpty ? 'Unavailable' : 'Available'),
           if (entities.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text(
@@ -267,7 +268,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withOpacity(0.12),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -315,7 +316,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFCBD5E1),
-              side: BorderSide(color: Colors.white.withOpacity(0.08)),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -343,7 +344,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Row(
             children: [
@@ -440,7 +441,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Icon(icon, color: const Color(0xFF94A3B8), size: 18),
       ),

@@ -50,7 +50,8 @@ class AuthController extends GetxController {
   }
 
   // ─── Email Signup ─────────────────────────────
-  Future<void> signupWithEmail(String email, String password, String name) async {
+  Future<void> signupWithEmail(
+      String email, String password, String name) async {
     try {
       isLoading(true);
       errorMessage('');
@@ -119,15 +120,24 @@ class AuthController extends GetxController {
   // ─── Error mapper ─────────────────────────────
   String _mapError(String code) {
     switch (code) {
-      case 'user-not-found':        return 'No account found with this email.';
-      case 'wrong-password':        return 'Incorrect password.';
-      case 'invalid-credential':    return 'Invalid email or password.';
-      case 'email-already-in-use':  return 'This email is already registered.';
-      case 'invalid-email':         return 'Please enter a valid email.';
-      case 'weak-password':         return 'Password must be at least 6 characters.';
-      case 'network-request-failed':return 'Check your internet connection.';
-      case 'too-many-requests':     return 'Too many attempts. Try again later.';
-      default:                      return 'Something went wrong. Try again.';
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+        return 'Incorrect password.';
+      case 'invalid-credential':
+        return 'Invalid email or password.';
+      case 'email-already-in-use':
+        return 'This email is already registered.';
+      case 'invalid-email':
+        return 'Please enter a valid email.';
+      case 'weak-password':
+        return 'Password must be at least 6 characters.';
+      case 'network-request-failed':
+        return 'Check your internet connection.';
+      case 'too-many-requests':
+        return 'Too many attempts. Try again later.';
+      default:
+        return 'Something went wrong. Try again.';
     }
   }
 }

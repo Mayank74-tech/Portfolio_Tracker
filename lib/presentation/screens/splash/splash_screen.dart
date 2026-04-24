@@ -38,9 +38,6 @@ class _SplashScreenState extends State<SplashScreen>
   // --- Glow pulse ---
   late final Animation<double> _glowRadius;
 
-  // --- Particle float ---
-  late final Animation<double> _particleFloat;
-
   @override
   void initState() {
     super.initState();
@@ -125,11 +122,6 @@ class _SplashScreenState extends State<SplashScreen>
     // Glow
     _glowRadius = Tween<double>(begin: 40, end: 70).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
-
-    // Particle
-    _particleFloat = Tween<double>(begin: -10, end: 10).animate(
-      CurvedAnimation(parent: _particleController, curve: Curves.easeInOut),
     );
   }
 
@@ -243,7 +235,7 @@ class _SplashScreenState extends State<SplashScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6366F1).withOpacity(0.14),
+                    const Color(0xFF6366F1).withValues(alpha: 0.14),
                     Colors.transparent,
                   ],
                 ),
@@ -262,7 +254,7 @@ class _SplashScreenState extends State<SplashScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF10B981).withOpacity(0.09),
+                  const Color(0xFF10B981).withValues(alpha: 0.09),
                   Colors.transparent,
                 ],
               ),
@@ -293,18 +285,19 @@ class _SplashScreenState extends State<SplashScreen>
           animation: _particleController,
           builder: (_, __) {
             final offset = math.sin(
-              (_particleController.value * math.pi * 2) + i * 0.8,
-            ) *
+                  (_particleController.value * math.pi * 2) + i * 0.8,
+                ) *
                 10;
             return Transform.translate(
               offset: Offset(0, offset),
               child: Opacity(
-                opacity: 0.3 + (math.sin(
-                  (_particleController.value * math.pi * 2) + i,
-                ) *
-                    0.5 +
-                    0.5) *
-                    opacity,
+                opacity: 0.3 +
+                    (math.sin(
+                                  (_particleController.value * math.pi * 2) + i,
+                                ) *
+                                0.5 +
+                            0.5) *
+                        opacity,
                 child: Container(
                   width: particleSize,
                   height: particleSize,
@@ -313,7 +306,7 @@ class _SplashScreenState extends State<SplashScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF6366F1).withOpacity(0.5),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.5),
                         blurRadius: 6,
                         spreadRadius: 1,
                       ),
@@ -352,7 +345,7 @@ class _SplashScreenState extends State<SplashScreen>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF6366F1).withOpacity(0.15),
+                            const Color(0xFF6366F1).withValues(alpha: 0.15),
                             Colors.transparent,
                           ],
                         ),
@@ -376,12 +369,14 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withOpacity(0.45),
+                          color:
+                              const Color(0xFF6366F1).withValues(alpha: 0.45),
                           blurRadius: _glowRadius.value,
                           spreadRadius: 2,
                         ),
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withOpacity(0.15),
+                          color:
+                              const Color(0xFF6366F1).withValues(alpha: 0.15),
                           blurRadius: _glowRadius.value * 1.8,
                           spreadRadius: 0,
                         ),
@@ -411,7 +406,8 @@ class _SplashScreenState extends State<SplashScreen>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF10B981).withOpacity(0.7),
+                                color: const Color(0xFF10B981)
+                                    .withValues(alpha: 0.7),
                                 blurRadius: 8,
                                 spreadRadius: 1,
                               ),
@@ -501,7 +497,7 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         // Track
                         Container(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                         ),
                         // Fill
                         FractionallySizedBox(

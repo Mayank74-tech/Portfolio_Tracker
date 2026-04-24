@@ -165,7 +165,7 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -192,7 +192,8 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFF0B1120),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.06)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 ),
                 child: TextField(
                   controller: controller,
@@ -277,7 +278,7 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
       imageUrl: data['image_url']?.toString() ?? '',
       category: _activeTab == 'Trending' ? 'trending' : 'general',
       accent: accent,
-      imageColor: accent.withOpacity(0.16),
+      imageColor: accent.withValues(alpha: 0.16),
       raw: data,
     );
   }
@@ -347,9 +348,9 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Market News',
                     style: TextStyle(
@@ -376,7 +377,8 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF131D2E),
                     borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.08)),
                   ),
                   child: const Icon(
                     Icons.search_rounded,
@@ -391,7 +393,7 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -412,8 +414,8 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color:
-                                      const Color(0xFF6366F1).withOpacity(0.35),
+                                  color: const Color(0xFF6366F1)
+                                      .withValues(alpha: 0.35),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),
@@ -462,9 +464,9 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.12),
+                color: accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: accent.withOpacity(0.18)),
+                border: Border.all(color: accent.withValues(alpha: 0.18)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -573,7 +575,7 @@ class _AnimatedNewsCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -598,12 +600,13 @@ class _AnimatedNewsCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: news.imageColor,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: news.accent.withOpacity(0.2)),
+                        border: Border.all(
+                            color: news.accent.withValues(alpha: 0.2)),
                       ),
                       child: Icon(
                         Icons.newspaper_rounded,
                         size: 22,
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -619,7 +622,7 @@ class _AnimatedNewsCard extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: news.accent.withOpacity(0.12),
+                                  color: news.accent.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(

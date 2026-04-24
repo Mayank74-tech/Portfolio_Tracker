@@ -44,7 +44,7 @@ class OllamaService {
     return generate(
       system: 'You are a financial assistant. Analyze the user portfolio in '
           'clear, simple language. Do not give direct buy or sell advice.',
-      prompt: _buildPortfolioPrompt(
+      prompt: buildPortfolioPrompt(
         holdings: holdings,
         question: question,
         portfolioSummary: portfolioSummary,
@@ -86,7 +86,7 @@ class OllamaService {
     return base.replace(path: path);
   }
 
-  static String _buildPortfolioPrompt({
+  static String buildPortfolioPrompt({
     required List<Map<String, dynamic>> holdings,
     required String question,
     Map<String, dynamic>? portfolioSummary,

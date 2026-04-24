@@ -11,7 +11,6 @@ class SmartPortfolioApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-
       // ─── APP INFO ──────────────────────────────────────
       title: 'Smart Portfolio Tracker',
       debugShowCheckedModeBanner: false,
@@ -32,7 +31,6 @@ class SmartPortfolioApp extends StatelessWidget {
       // ─── DEFAULT TRANSITION ────────────────────────────
       defaultTransition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 300),
-
     );
   }
 }

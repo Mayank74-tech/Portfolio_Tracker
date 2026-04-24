@@ -32,7 +32,7 @@ class AuthRepository {
     if (googleUser == null) return null;
 
     final GoogleSignInAuthentication googleAuth =
-    await googleUser.authentication;
+        await googleUser.authentication;
 
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,

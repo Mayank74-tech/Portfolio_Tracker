@@ -3,17 +3,12 @@ import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
 
-// Chart data points (7-day)
 class _ChartPoint {
   final String date;
   final double value;
   const _ChartPoint(this.date, this.value);
 }
 
-
-// ─────────────────────────────────────────────
-//  Dashboard Screen
-// ─────────────────────────────────────────────
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -58,6 +53,35 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
+  List<_ChartPoint> _buildChartPoints(List<Map<String, dynamic>> holdings) {
+    if (holdings.isEmpty) return [];
+
+    // Sort holdings by buy_date ascending
+    final sorted = [...holdings];
+    sorted.sort((a, b) {
+      final aDate = a['buy_date']?.toString() ?? '';
+      final bDate = b['buy_date']?.toString() ?? '';
+      return aDate.compareTo(bDate);
+    });
+
+    final points = <_ChartPoint>[];
+
+    // Always start from 0
+    points.add(const _ChartPoint('Start', 0));
+
+    double cumulative = 0;
+    for (final h in sorted) {
+      final rawDate = h['buy_date']?.toString() ?? '';
+      final date = rawDate.length >= 10 ? rawDate.substring(5, 10) : '?';
+      final value = _asDouble(h['current_price'] ?? h['buy_price']) *
+          _asDouble(h['quantity']);
+      cumulative += value;
+      points.add(_ChartPoint(date, cumulative));
+    }
+
+    return points;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -68,18 +92,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       final totalPL = _asDouble(summary['profit_loss']);
       final totalPLPct = _asDouble(summary['profit_loss_percent']);
       final todayChange = _asDouble(summary['today_change']);
-      final todayChangePct =
-          totalValue == 0 ? 0.0 : (todayChange / totalValue) * 100;
 
-      // Inside build(), after existing summary variables:
-      final chartPoints = holdings.isEmpty
-          ? <_ChartPoint>[]
-          : holdings.asMap().entries.map((e) {
-        final symbol = (e.value['stock_symbol'] ?? e.value['symbol'] ?? '').toString();
-        final value = _asDouble(e.value['current_price'] ?? e.value['buy_price']) *
-            _asDouble(e.value['quantity']);
-        return _ChartPoint(symbol, value);
-      }).toList();
+      // Use P&L as fallback when todayChange is 0 (no live prices)
+      final displayChange = todayChange != 0 ? todayChange : totalPL;
+      final displayChangePct = todayChange != 0
+          ? (totalValue == 0 ? 0.0 : (todayChange / totalValue) * 100)
+          : totalPLPct;
+      final isDisplayGain = displayChange >= 0;
+
+      final chartPoints = _buildChartPoints(holdings);
 
       return Scaffold(
         backgroundColor: const Color(0xFF0B1120),
@@ -90,10 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    // ── Greeting header ──
                     SliverToBoxAdapter(child: _buildHeader()),
-
-                    // ── Portfolio summary card ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
@@ -106,32 +124,28 @@ class _DashboardScreenState extends State<DashboardScreen>
                               totalInvested: totalInvested,
                               totalPL: totalPL,
                               totalPLPct: totalPLPct,
-                              todayChange: todayChange,
-                              todayChangePct: todayChangePct,
+                              displayChange: displayChange,
+                              displayChangePct: displayChangePct,
+                              isDisplayGain: isDisplayGain,
+                              isTodayChange: todayChange != 0,
                               holdingCount: holdings.length,
                             ),
                           ),
                         ),
                       ),
                     ),
-
-                    // ── Mini chart ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                         child: _buildChartCard(chartPoints),
                       ),
                     ),
-
-                    // ── Quick actions ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                         child: _buildQuickActions(),
                       ),
                     ),
-
-                    // ── Holdings header ──
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -150,20 +164,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                               onTap: () {},
                               child: const Row(
                                 children: [
-                                  Text(
-                                    'View All',
-                                    style: TextStyle(
-                                      color: Color(0xFF6366F1),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                  Text('View All',
+                                      style: TextStyle(
+                                        color: Color(0xFF6366F1),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      )),
                                   SizedBox(width: 2),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Color(0xFF6366F1),
-                                    size: 16,
-                                  ),
+                                  Icon(Icons.chevron_right_rounded,
+                                      color: Color(0xFF6366F1), size: 16),
                                 ],
                               ),
                             ),
@@ -171,16 +180,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ),
                     ),
-
-                    // ── Holdings list ──
                     if (_portfolioController.isLoading.value)
                       const SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.all(24),
                           child: Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF6366F1),
-                            ),
+                                color: Color(0xFF6366F1)),
                           ),
                         ),
                       )
@@ -192,9 +198,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             child: Text(
                               'No holdings yet. Add your first stock.',
                               style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 13,
-                              ),
+                                  color: Color(0xFF64748B), fontSize: 13),
                             ),
                           ),
                         ),
@@ -206,7 +210,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                           childCount: holdings.length,
                         ),
                       ),
-
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
@@ -218,9 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  // ─────────────────────────────────────────────
-  //  HEADER
-  // ─────────────────────────────────────────────
+  // ── Header ──
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -237,25 +238,17 @@ class _DashboardScreenState extends State<DashboardScreen>
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Good morning 👋',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 13,
-                ),
-              ),
+              Text('Good morning 👋',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
               SizedBox(height: 2),
-              Text(
-                'Hi, Arjun!',
-                style: TextStyle(
-                  color: Color(0xFFF1F5F9),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text('Hi, Investor!',
+                  style: TextStyle(
+                    color: Color(0xFFF1F5F9),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  )),
             ],
           ),
-          // Notification bell
           Stack(
             children: [
               Container(
@@ -264,15 +257,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFF131D2E),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.08),
-                  ),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: Color(0xFF94A3B8),
-                  size: 18,
-                ),
+                child: const Icon(Icons.notifications_outlined,
+                    color: Color(0xFF94A3B8), size: 18),
               ),
               Positioned(
                 top: 8,
@@ -283,10 +272,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF6366F1),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF0B1120),
-                      width: 1.5,
-                    ),
+                    border:
+                        Border.all(color: const Color(0xFF0B1120), width: 1.5),
                   ),
                 ),
               ),
@@ -297,20 +284,22 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  SUMMARY CARD
-  // ─────────────────────────────────────────────
+  // ── Summary Card ──
   Widget _buildSummaryCard({
     required double totalValue,
     required double totalInvested,
     required double totalPL,
     required double totalPLPct,
-    required double todayChange,
-    required double todayChangePct,
+    required double displayChange,
+    required double displayChangePct,
+    required bool isDisplayGain,
+    required bool isTodayChange,
     required int holdingCount,
   }) {
     final isGain = totalPL >= 0;
     final plColor = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final changeColor =
+        isDisplayGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -322,13 +311,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           colors: [Color(0xFF1E1A4F), Color(0xFF1A1235), Color(0xFF0F0D2E)],
         ),
         border: Border.all(
-          color: const Color(0xFF6366F1).withOpacity(0.2),
-          width: 1,
-        ),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.2), width: 1),
       ),
       child: Stack(
         children: [
-          // Glow
           Positioned(
             top: -20,
             right: -20,
@@ -339,7 +325,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6366F1).withOpacity(0.15),
+                    const Color(0xFF6366F1).withValues(alpha: 0.15),
                     Colors.transparent,
                   ],
                 ),
@@ -349,17 +335,12 @@ class _DashboardScreenState extends State<DashboardScreen>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Label
-              const Text(
-                'Total Portfolio Value',
-                style: TextStyle(
-                  color: Color(0xFF94A3B8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              const Text('Total Portfolio Value',
+                  style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500)),
               const SizedBox(height: 6),
-              // Value
               Text(
                 '₹${_formatInr(totalValue, 0)}',
                 style: const TextStyle(
@@ -371,33 +352,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
               const SizedBox(height: 12),
-              // Today badges
               Row(
                 children: [
                   _badge(
-                    icon: Icons.trending_up_rounded,
+                    icon: isDisplayGain
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
                     label:
-                        '${todayChange >= 0 ? "+" : "-"}₹${_formatInr(todayChange.abs(), 0)} Today',
-                    color: const Color(0xFF10B981),
-                    bg: const Color(0xFF10B981).withOpacity(0.15),
+                        '${displayChange >= 0 ? "+" : "-"}₹${_formatInr(displayChange.abs(), 0)} ${isTodayChange ? "Today" : "P&L"}',
+                    color: changeColor,
+                    bg: changeColor.withValues(alpha: 0.15),
                   ),
                   const SizedBox(width: 8),
                   _badge(
                     label:
-                        '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}%',
-                    color: const Color(0xFF10B981),
-                    bg: const Color(0xFF10B981).withOpacity(0.10),
+                        '${displayChangePct >= 0 ? "+" : ""}${displayChangePct.toStringAsFixed(2)}%',
+                    color: changeColor,
+                    bg: changeColor.withValues(alpha: 0.10),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
-              // Divider
-              Container(
-                height: 1,
-                color: Colors.white.withOpacity(0.07),
-              ),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
               const SizedBox(height: 14),
-              // Bottom stats row
               Row(
                 children: [
                   _statItem('Invested', '₹${_formatInr(totalInvested, 0)}'),
@@ -426,10 +403,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration:
+          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -468,19 +443,17 @@ class _DashboardScreenState extends State<DashboardScreen>
         width: 1,
         height: 28,
         margin: const EdgeInsets.symmetric(horizontal: 8),
-        color: Colors.white.withOpacity(0.07),
+        color: Colors.white.withValues(alpha: 0.07),
       );
 
-  // ─────────────────────────────────────────────
-  //  CHART CARD
-  // ─────────────────────────────────────────────
+  // ── Chart Card ──
   Widget _buildChartCard(List<_ChartPoint> chartPoints) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         children: [
@@ -493,10 +466,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withOpacity(0.15),
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('7D',
+                child: const Text('ALL',
                     style: TextStyle(
                         color: Color(0xFF818CF8),
                         fontSize: 11,
@@ -506,23 +479,22 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 100,
-            child: chartPoints.length < 2
+            height: 110,
+            child: chartPoints.isEmpty
                 ? const Center(
-              child: Text(
-                'Add 2+ stocks to see chart',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-              ),
-            )
-                : _MiniLineChart(data: chartPoints),          ),
+                    child: Text(
+                      'Add a stock to see chart',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    ),
+                  )
+                : _MiniLineChart(data: chartPoints),
+          ),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  QUICK ACTIONS
-  // ─────────────────────────────────────────────
+  // ── Quick Actions ──
   Widget _buildQuickActions() {
     final actions = [
       (
@@ -567,7 +539,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF111827),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.06)),
                   ),
                   child: Column(
                     children: [
@@ -575,7 +548,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: a.$3.withOpacity(0.12),
+                          color: a.$3.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(a.$1, color: a.$4, size: 18),
@@ -598,12 +571,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  HOLDING TILE
-  // ─────────────────────────────────────────────
+  // ── Holding Tile ──
   Widget _buildHoldingTile(Map<String, dynamic> h, int index) {
     final symbol = _asString(h['stock_symbol'] ?? h['symbol'], 'STK');
-    final sector = _asString(h['sector'], 'Stock');
+    final name = _asString(h['stock_name'] ?? h['name'], symbol);
     final platform = _asString(h['platform'], 'Manual');
     final buyPrice = _asDouble(h['buy_price']);
     final currentPrice = _asDouble(h['current_price'] ?? h['buy_price']);
@@ -611,6 +582,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final isGain = currentPrice >= buyPrice;
     final plPct =
         buyPrice == 0 ? 0.0 : ((currentPrice - buyPrice) / buyPrice * 100);
+    final currentValue = currentPrice * qty;
     final gainColor =
         isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
@@ -638,7 +610,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Row(
             children: [
@@ -647,12 +619,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: gainColor.withOpacity(0.12),
+                  color: gainColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
-                    symbol.substring(0, symbol.length < 3 ? symbol.length : 3),
+                    symbol.length >= 3 ? symbol.substring(0, 3) : symbol,
                     style: TextStyle(
                       color: gainColor,
                       fontSize: 10,
@@ -669,12 +641,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          symbol,
-                          style: const TextStyle(
-                            color: Color(0xFFF1F5F9),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            symbol,
+                            style: const TextStyle(
+                              color: Color(0xFFF1F5F9),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -682,7 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -698,21 +673,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${qty.toStringAsFixed(qty.truncateToDouble() == qty ? 0 : 2)} shares · $sector',
+                      '${qty.toStringAsFixed(qty.truncateToDouble() == qty ? 0 : 2)} shares · $name',
                       style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 11,
-                      ),
+                          color: Color(0xFF64748B), fontSize: 11),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              // Price
+              const SizedBox(width: 8),
+              // Price & P&L
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '₹${_formatInr(currentPrice, 1)}',
+                    '₹${_formatInr(currentValue, 0)}',
                     style: const TextStyle(
                       color: Color(0xFFF1F5F9),
                       fontSize: 14,
@@ -749,11 +724,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  //  HELPERS
-  // ─────────────────────────────────────────────
+  // ── Helpers ──
   String _formatInr(double v, int decimals) {
-    // Simple Indian number formatting
     final s = v.toStringAsFixed(decimals);
     final parts = s.split('.');
     final intStr = parts[0];
@@ -780,9 +752,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 }
 
-// ─────────────────────────────────────────────
-//  Mini line chart (CustomPaint – no package)
-// ─────────────────────────────────────────────
+// ── Mini Line Chart ──
 class _MiniLineChart extends StatelessWidget {
   final List<_ChartPoint> data;
   const _MiniLineChart({required this.data});
@@ -790,6 +760,7 @@ class _MiniLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
+      size: Size.infinite,
       painter: _MiniLineChartPainter(data: data),
     );
   }
@@ -801,43 +772,44 @@ class _MiniLineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
+    if (data.length < 2) return;
+
+    const labelHeight = 16.0;
+    final chartHeight = size.height - labelHeight;
 
     final minV = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
     final maxV = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    // After
     final rawRange = maxV - minV;
     final range = rawRange < 1.0 ? 1.0 : rawRange;
     final padV = range * 0.15;
 
+    // Compute points
     List<Offset> points = [];
     for (int i = 0; i < data.length; i++) {
-      final x = data.length == 1 ? size.width / 2 : i / (data.length - 1) * size.width;
-      final y = size.height -
-          ((data[i].value - minV + padV) / (range + padV * 2)) * size.height;
+      final x = i / (data.length - 1) * size.width;
+      final y = chartHeight -
+          ((data[i].value - minV + padV) / (range + padV * 2)) * chartHeight;
       points.add(Offset(x, y));
     }
 
     // Gradient fill
-    final fillPath = Path()..moveTo(points.first.dx, size.height);
+    final fillPath = Path()..moveTo(points.first.dx, chartHeight);
     for (final p in points) {
       fillPath.lineTo(p.dx, p.dy);
     }
     fillPath
-      ..lineTo(points.last.dx, size.height)
+      ..lineTo(points.last.dx, chartHeight)
       ..close();
 
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        const Color(0xFF6366F1).withOpacity(0.3),
-        const Color(0xFF6366F1).withOpacity(0.0),
-      ],
-    );
     final fillPaint = Paint()
-      ..shader =
-          gradient.createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF6366F1).withValues(alpha: 0.3),
+          const Color(0xFF6366F1).withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, chartHeight));
     canvas.drawPath(fillPath, fillPaint);
 
     // Line
@@ -854,18 +826,32 @@ class _MiniLineChartPainter extends CustomPainter {
     }
     canvas.drawPath(linePath, linePaint);
 
-    // X-axis labels
-    final textStyle = TextStyle(
-      color: const Color(0xFF475569),
+    // Dot at last point
+    canvas.drawCircle(
+      points.last,
+      4,
+      Paint()..color = const Color(0xFF6366F1),
+    );
+    canvas.drawCircle(
+      points.last,
+      2,
+      Paint()..color = Colors.white,
+    );
+
+    // X-axis labels — skip 'Start', show every other label if crowded
+    const textStyle = TextStyle(
+      color: Color(0xFF475569),
       fontSize: 9,
     );
-    for (int i = 0; i < data.length; i++) {
+    final step = data.length > 6 ? 2 : 1;
+    for (int i = 1; i < data.length; i += step) {
       final tp = TextPainter(
         text: TextSpan(text: data[i].date, style: textStyle),
         textDirection: TextDirection.ltr,
       )..layout();
+      final x = (i / (data.length - 1) * size.width) - tp.width / 2;
       tp.paint(
-          canvas, Offset(points[i].dx - tp.width / 2, size.height - tp.height));
+          canvas, Offset(x.clamp(0, size.width - tp.width), chartHeight + 4));
     }
   }
 

@@ -303,7 +303,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF131D2E),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: const Icon(
                 Icons.chevron_left_rounded,
@@ -313,9 +313,9 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
             ),
           ),
           const SizedBox(width: 12),
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'Import CSV',
                 style: TextStyle(
@@ -345,15 +345,15 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(0.08),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF6366F1).withOpacity(0.2),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.2),
             ),
           ),
-          child: Row(
+          child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Icon(
                 Icons.info_outline_rounded,
                 size: 16,
@@ -405,7 +405,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFF111827),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -414,7 +414,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: broker.$2.withOpacity(0.15),
+                      color: broker.$2.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Center(
@@ -450,12 +450,12 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 36),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: Colors.white.withValues(alpha: 0.02),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _isPicking
                         ? const Color(0xFF6366F1)
-                        : Colors.white.withOpacity(0.12),
+                        : Colors.white.withValues(alpha: 0.12),
                     width: 2,
                   ),
                 ),
@@ -468,7 +468,8 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                         width: 68,
                         height: 68,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withOpacity(0.12),
+                          color:
+                              const Color(0xFF6366F1).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
@@ -508,9 +509,9 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                         color: const Color(0xFF6366F1),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
+                        children: [
                           Icon(
                             Icons.upload_rounded,
                             size: 14,
@@ -539,10 +540,10 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withOpacity(0.08),
+              color: const Color(0xFFEF4444).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFEF4444).withOpacity(0.2),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -588,10 +589,10 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withOpacity(0.08),
+            color: const Color(0xFF10B981).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF10B981).withOpacity(0.2),
+              color: const Color(0xFF10B981).withValues(alpha: 0.2),
             ),
           ),
           child: Row(
@@ -647,7 +648,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -681,7 +682,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   color: index.isEven
                       ? const Color(0xFF111827)
-                      : Colors.white.withOpacity(0.02),
+                      : Colors.white.withValues(alpha: 0.02),
                   child: Row(
                     children: [
                       Expanded(
@@ -733,10 +734,10 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withOpacity(0.08),
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFF59E0B).withOpacity(0.18),
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.18),
               ),
             ),
             child: Column(
@@ -780,10 +781,10 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withOpacity(0.08),
+            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF6366F1).withOpacity(0.15),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.15),
             ),
           ),
           child: Row(
@@ -809,7 +810,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.35),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -881,7 +882,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                   height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF10B981).withOpacity(0.15),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     border: Border.all(
                       color: const Color(0xFF10B981),
                       width: 2,

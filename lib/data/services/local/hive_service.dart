@@ -25,12 +25,9 @@ class HiveService {
   }
 
   // ─── Getters ──────────────────────────────────
-  static String? get savedName =>
-      Hive.box(_userBox).get(_keyUserName);
-  static String? get savedEmail =>
-      Hive.box(_userBox).get(_keyUserEmail);
-  static String? get savedUid =>
-      Hive.box(_userBox).get(_keyUserUid);
+  static String? get savedName => Hive.box(_userBox).get(_keyUserName);
+  static String? get savedEmail => Hive.box(_userBox).get(_keyUserEmail);
+  static String? get savedUid => Hive.box(_userBox).get(_keyUserUid);
 
   // ─── Clear on logout ──────────────────────────
   static Future<void> clearUser() async {

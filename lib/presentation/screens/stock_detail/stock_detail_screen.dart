@@ -157,11 +157,10 @@ class _StockDetailScreenState extends State<StockDetailScreen>
               ? 0.0
               : (priceDelta / previousClose) * 100;
       final isGain = changePercent >= 0;
-      final accent = isGain
-          ? const Color(0xFF10B981)
-          : const Color(0xFFEF4444);
+      final accent = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
-      final hasAnyData = quote.isNotEmpty || profile.isNotEmpty || points.isNotEmpty;
+      final hasAnyData =
+          quote.isNotEmpty || profile.isNotEmpty || points.isNotEmpty;
 
       if (!hasAnyData && _stockController.isLoading.value) {
         return _buildLoadingState();
@@ -386,9 +385,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           ),
           _iconBtn(
             _starred ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: _starred
-                ? const Color(0xFFF59E0B)
-                : const Color(0xFF64748B),
+            color: _starred ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
             onTap: () => setState(() => _starred = !_starred),
           ),
           const SizedBox(width: 8),
@@ -428,12 +425,13 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: accent.withOpacity(0.15),
+                        color: accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
                         child: Text(
-                          _symbol.substring(0, _symbol.length.clamp(1, 3).toInt()),
+                          _symbol.substring(
+                              0, _symbol.length.clamp(1, 3).toInt()),
                           style: TextStyle(
                             color: accent,
                             fontSize: 10,
@@ -486,7 +484,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                   Text(
                     'Latest market price',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.45),
+                      color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 11,
                     ),
                   ),
@@ -501,7 +499,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.12),
+                  color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -568,11 +566,9 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                   range,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color:
-                        isActive ? Colors.white : const Color(0xFF64748B),
+                    color: isActive ? Colors.white : const Color(0xFF64748B),
                     fontSize: 12,
-                    fontWeight:
-                        isActive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -590,7 +586,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: points.length < 2
           ? const Center(
@@ -617,7 +613,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
         decoration: BoxDecoration(
           color: const Color(0xFF111827),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,11 +650,9 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     final invested = quantity * buyPrice;
     final currentValue = quantity * currentPrice;
     final profitLoss = currentValue - invested;
-    final profitLossPercent =
-        invested == 0 ? 0 : (profitLoss / invested) * 100;
+    final profitLossPercent = invested == 0 ? 0 : (profitLoss / invested) * 100;
     final isGain = profitLoss >= 0;
-    final plColor =
-        isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final plColor = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     final stats = [
       ('Avg. Buy Price', '₹${_formatMoney(buyPrice)}'),
@@ -672,7 +666,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,7 +691,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
               return Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.03),
+                  color: Colors.white.withValues(alpha: 0.03),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -727,12 +721,11 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           ),
           const SizedBox(height: 10),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: plColor.withOpacity(0.08),
+              color: plColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: plColor.withOpacity(0.2)),
+              border: Border.all(color: plColor.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -822,7 +815,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,7 +845,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                 if (index > 0)
                   Container(
                     height: 1,
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                   ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 11),
@@ -905,7 +898,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
             decoration: BoxDecoration(
               color: const Color(0xFF111827),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.06)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: TextButton.icon(
               onPressed: () => _loadData(refresh: true),
@@ -937,9 +930,9 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.08),
+        color: accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withOpacity(0.15)),
+        border: Border.all(color: accent.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -983,7 +976,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6366F1).withOpacity(0.25),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.25),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -1021,7 +1014,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Icon(
           icon,
@@ -1082,8 +1075,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
 
       final value = entry.value is Map
           ? _number(
-              (entry.value as Map)['4. close'] ??
-                  (entry.value as Map)['close'],
+              (entry.value as Map)['4. close'] ?? (entry.value as Map)['close'],
             )
           : 0.0;
 
@@ -1292,7 +1284,7 @@ class _StockChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color.withOpacity(0.30), color.withOpacity(0.0)],
+          colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.0)],
         ).createShader(Rect.fromLTWH(0.0, 0.0, size.width, chartHeight)),
     );
 
@@ -1315,8 +1307,8 @@ class _StockChartPainter extends CustomPainter {
     canvas.drawCircle(lastPoint, 5, Paint()..color = color);
     canvas.drawCircle(lastPoint, 3, Paint()..color = Colors.white);
 
-    final textStyle = TextStyle(
-      color: const Color(0xFF475569),
+    const textStyle = TextStyle(
+      color: Color(0xFF475569),
       fontSize: 9,
     );
     final step = data.length > 6 ? (data.length / 6).ceil() : 1;

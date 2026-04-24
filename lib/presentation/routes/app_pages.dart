@@ -9,6 +9,7 @@ import '../bindings/profile_binding.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/auth/signup_screen.dart';
 import '../screens/dashboard/main_navigation_screen.dart';
 import '../screens/stock_detail/stock_detail_screen.dart';
 import '../screens/add_stock/add_stock_screen.dart';
@@ -17,6 +18,7 @@ import '../screens/ai_chat/ai_chat_screen.dart';
 import '../screens/market_news/market_news_screen.dart';
 import '../screens/market_news/news_detail_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/success/success_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -39,11 +41,11 @@ class AppPages {
       page: () => const LoginScreen(),
       binding: AuthBinding(),
     ),
-    // GetPage(
-    //   name: AppRoutes.SIGNUP,
-    //   page: () => const SignupScreen(),
-    //   binding: AuthBinding(),
-    // ),
+    GetPage(
+      name: AppRoutes.SIGNUP,
+      page: () => const SignupScreen(),
+      binding: AuthBinding(),
+    ),
 
     // ─── DASHBOARD (with bottom nav) ─────────────
     GetPage(
@@ -105,10 +107,10 @@ class AppPages {
     ),
 
     // ─── SUCCESS ─────────────────────────────────
-    // GetPage(
-    //   name: AppRoutes.SUCCESS,
-    //   page: () => const SuccessScreen(),
-    //   transition: Transition.zoom,
-    // ),
+    GetPage(
+      name: AppRoutes.SUCCESS,
+      page: () => const SuccessScreen(),
+      transition: Transition.zoom,
+    ),
   ];
 }

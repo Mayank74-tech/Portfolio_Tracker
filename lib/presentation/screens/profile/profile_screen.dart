@@ -126,8 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 accentColor: const Color(0xFFF59E0B),
                                 isToggle: true,
                                 toggled: notificationsEnabled,
-                                onToggle: () => _settingsController
-                                    .setNotificationsEnabled(
+                                onToggle: () =>
+                                    _settingsController.setNotificationsEnabled(
                                   !notificationsEnabled,
                                 ),
                               ),
@@ -247,7 +247,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           end: Alignment.bottomRight,
           colors: [Color(0xFF1E1A4F), Color(0xFF0F0D2E)],
         ),
-        border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.2)),
+        border:
+            Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
       child: Stack(
         children: [
@@ -261,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF6366F1).withOpacity(0.12),
+                    const Color(0xFF6366F1).withValues(alpha: 0.12),
                     Colors.transparent,
                   ],
                 ),
@@ -284,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withOpacity(0.4),
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
                           blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
@@ -329,7 +330,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.12),
+                            color:
+                                const Color(0xFF10B981).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
@@ -363,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 16),
               Container(
                 height: 1,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
               const SizedBox(height: 16),
               Row(
@@ -411,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       width: 1,
       height: 28,
-      color: Colors.white.withOpacity(0.07),
+      color: Colors.white.withValues(alpha: 0.07),
     );
   }
 
@@ -438,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Column(
             children: rows.asMap().entries.map((entry) {
@@ -449,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   if (index > 0)
                     Container(
                       height: 1,
-                      color: Colors.white.withOpacity(0.04),
+                      color: Colors.white.withValues(alpha: 0.04),
                     ),
                   _buildSettingRow(row),
                 ],
@@ -472,17 +474,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: row.destructive
-                    ? const Color(0xFFEF4444).withOpacity(0.12)
-                    : row.accentColor.withOpacity(0.12),
+                color: row.accentColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 row.icon,
                 size: 16,
-                color: row.destructive
-                    ? const Color(0xFFEF4444)
-                    : row.accentColor,
+                color: row.accentColor,
               ),
             ),
             const SizedBox(width: 12),
@@ -492,10 +490,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 children: [
                   Text(
                     row.label,
-                    style: TextStyle(
-                      color: row.destructive
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFFE2E8F0),
+                    style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -536,13 +532,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         height: 56,
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withOpacity(0.08),
+          color: const Color(0xFFEF4444).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+          border:
+              Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
         ),
-        child: Row(
+        child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 20),
             SizedBox(width: 10),
             Text(
@@ -569,7 +566,6 @@ class _SettingRow {
   final bool? toggled;
   final VoidCallback? onToggle;
   final VoidCallback? onTap;
-  final bool destructive;
 
   const _SettingRow({
     required this.icon,
@@ -580,7 +576,6 @@ class _SettingRow {
     this.toggled,
     this.onToggle,
     this.onTap,
-    this.destructive = false,
   });
 }
 
@@ -634,14 +629,13 @@ class _AnimatedToggleState extends State<_AnimatedToggle>
         width: 46,
         height: 26,
         decoration: BoxDecoration(
-          color: widget.value
-              ? const Color(0xFF6366F1)
-              : const Color(0xFF1E293B),
+          color:
+              widget.value ? const Color(0xFF6366F1) : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(13),
           border: Border.all(
             color: widget.value
                 ? const Color(0xFF6366F1)
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -656,12 +650,11 @@ class _AnimatedToggleState extends State<_AnimatedToggle>
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color:
-                      widget.value ? Colors.white : const Color(0xFF64748B),
+                  color: widget.value ? Colors.white : const Color(0xFF64748B),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
