@@ -40,6 +40,8 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
   List<String> _warnings = const [];
   List<CsvImportRow> _parsedRows = const [];
 
+  String _detectedBroker = '';
+
   late final AnimationController _uploadCtrl;
   late final AnimationController _previewCtrl;
   late final AnimationController _doneCtrl;
@@ -164,6 +166,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
         _warnings = parsed.warnings;
         _parseError = null;
         _stage = _Stage.preview;
+        _detectedBroker   = parsed.detectedBroker;
       });
 
       _previewCtrl.forward(from: 0);
@@ -237,6 +240,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
       _fileSizeBytes = null;
       _warnings = const [];
       _parsedRows = const [];
+      _detectedBroker = '';
     });
     _uploadCtrl.forward(from: 0);
   }
@@ -616,7 +620,7 @@ class _ImportCsvScreenState extends State<ImportCsvScreen>
                       ),
                     ),
                     Text(
-                      '${_parsedRows.length} valid rows · ${_formatFileSize(_fileSizeBytes)}',
+                      '${_parsedRows.length} holdings · ${_formatFileSize(_fileSizeBytes)} · Detected: $_detectedBroker',
                       style: const TextStyle(
                         color: Color(0xFF64748B),
                         fontSize: 11,

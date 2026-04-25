@@ -33,11 +33,21 @@ class AiController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final summary = await _portfolioRepository.getPortfolioSummary();
-      final rawHoldings = summary['holdings'];
-      final holdings = rawHoldings is List
-          ? rawHoldings.whereType<Map>().map(_stringKeyedMap).toList()
-          : <Map<String, dynamic>>[];
+      Map<String, dynamic>? summary;
+      List<Map<String, dynamic>> holdings = const [];
+
+      try {
+        final portfolioSummary =
+            await _portfolioRepository.getPortfolioSummary();
+        summary = portfolioSummary;
+        final rawHoldings = portfolioSummary['holdings'];
+        holdings = rawHoldings is List
+            ? rawHoldings.whereType<Map>().map(_stringKeyedMap).toList()
+            : <Map<String, dynamic>>[];
+      } catch (_) {
+        summary = null;
+        holdings = const [];
+      }
 
       final response = await _aiRepository.sendChatMessage(
         message: message,
@@ -51,7 +61,7 @@ class AiController extends GetxController {
       messages.add(
         _chatMessage(
           sender: 'ai',
-          message: 'I could not generate an insight right now.',
+          message: _friendlyError(error),
           error: true,
         ),
       );
@@ -87,4 +97,24 @@ class AiController extends GetxController {
 
   static Map<String, dynamic> _stringKeyedMap(Map value) =>
       value.map((key, data) => MapEntry(key.toString(), data));
+
+  static String _friendlyError(Object error) {
+    final text = error.toString();
+
+    if (text.contains('Missing GEMINI_API_KEY')) {
+      return 'Gemini is not configured yet. Add GEMINI_API_KEY to your .env '
+          'or start Ollama for local AI.';
+    }
+
+    if (text.contains('Both Gemini and Ollama are unavailable')) {
+      return 'AI is unavailable right now. Add GEMINI_API_KEY to .env or make '
+          'sure Ollama is running at the configured local URL.';
+    }
+
+    if (text.contains('User must be logged in')) {
+      return 'Please sign in again so I can load your portfolio context.';
+    }
+
+    return 'I could not generate an insight right now.';
+  }
 }

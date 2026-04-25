@@ -14,5 +14,8 @@ class ApiKeys {
 
   static String get ollamaModel => dotenv.env['OLLAMA_MODEL'] ?? 'llama3';
 
+  static String get geminiModel =>
+      (dotenv.env['GEMINI_MODEL'] ?? 'gemini-2.5-flash').trim();
+
   static String get geminiApiKey => (dotenv.env['GEMINI_API_KEY'] ?? '').trim();
 }

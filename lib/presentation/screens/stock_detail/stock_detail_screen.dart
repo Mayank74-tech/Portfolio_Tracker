@@ -109,25 +109,17 @@ class _StockDetailScreenState extends State<StockDetailScreen>
 
   Future<void> _loadData({bool refresh = false}) async {
     if (_symbol.isEmpty) return;
-
-    if (refresh && mounted) {
-      setState(() => _isRefreshing = true);
-    }
-
+    if (refresh && mounted) setState(() => _isRefreshing = true);
     _stockController.clearError();
 
-    if (_portfolioController.holdings.isEmpty) {
-      await _portfolioController.loadHoldings();
-    }
+    // Load portfolio holdings and stock data in parallel
+    await Future.wait([
+      if (_portfolioController.holdings.isEmpty)
+        _portfolioController.loadHoldings(),
+      _stockController.loadAllData(_symbol),  // handles all 4 APIs internally
+    ]);
 
-    await _stockController.loadQuote(_symbol);
-    await _stockController.loadCompanyProfile(_symbol);
-    await _stockController.loadDailyTimeSeries(_symbol, outputSize: 'full');
-    await _stockController.loadWeeklyTimeSeries(_symbol);
-
-    if (refresh && mounted) {
-      setState(() => _isRefreshing = false);
-    }
+    if (refresh && mounted) setState(() => _isRefreshing = false);
   }
 
   @override

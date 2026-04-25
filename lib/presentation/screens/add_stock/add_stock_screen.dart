@@ -9,15 +9,21 @@ class _SearchResult {
   final String symbol;
   final String name;
   final String exchange;
-  final double price;
-  const _SearchResult(
-      {required this.symbol,
-      required this.name,
-      required this.exchange,
-      required this.price});
+  const _SearchResult({
+    required this.symbol,
+    required this.name,
+    required this.exchange,
+  });
 }
 
-const _platforms = ['Zerodha', 'Groww', 'Angel One', 'Upstox', 'IIFL', 'Other'];
+const _platforms = [
+  'Zerodha',
+  'Groww',
+  'Angel One',
+  'Upstox',
+  'IIFL',
+  'Other',
+];
 
 // ─────────────────────────────────────────────
 //  Add Stock Screen
@@ -47,8 +53,9 @@ class _AddStockScreenState extends State<AddStockScreen>
 
   _SearchResult? _selectedStock;
   String _platform = 'Zerodha';
-  DateTime _buyDate = DateTime(2025, 4, 3);
+  DateTime _buyDate = DateTime.now();
   bool _showDropdown = false;
+  bool _isFetchingPrice = false;
   List<_SearchResult> _filtered = [];
 
   // Animation controllers
@@ -98,22 +105,26 @@ class _AddStockScreenState extends State<AddStockScreen>
         CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeIn);
     _entranceSlide =
         Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-            CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeOutCubic));
+            CurvedAnimation(
+                parent: _entranceCtrl, curve: Curves.easeOutCubic));
 
     _dropdownHeight =
         CurvedAnimation(parent: _dropdownCtrl, curve: Curves.easeOutCubic);
 
-    _previewFade = CurvedAnimation(parent: _previewCtrl, curve: Curves.easeIn);
+    _previewFade =
+        CurvedAnimation(parent: _previewCtrl, curve: Curves.easeIn);
     _previewSlide =
         Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
-            CurvedAnimation(parent: _previewCtrl, curve: Curves.easeOutCubic));
+            CurvedAnimation(
+                parent: _previewCtrl, curve: Curves.easeOutCubic));
 
     _successScale = Tween<double>(begin: 0.5, end: 1.0).animate(
         CurvedAnimation(parent: _successCtrl, curve: Curves.elasticOut));
-    _successFade = CurvedAnimation(parent: _successCtrl, curve: Curves.easeIn);
+    _successFade =
+        CurvedAnimation(parent: _successCtrl, curve: Curves.easeIn);
 
-    _checkScale = Tween<double>(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
+    _checkScale = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut));
   }
 
   Future<void> _onSearchChanged() async {
@@ -129,9 +140,9 @@ class _AddStockScreenState extends State<AddStockScreen>
         .map(_searchResultFromMap)
         .where(
           (s) =>
-              s.symbol.toLowerCase().contains(q.toLowerCase()) ||
-              s.name.toLowerCase().contains(q.toLowerCase()),
-        )
+      s.symbol.toLowerCase().contains(q.toLowerCase()) ||
+          s.name.toLowerCase().contains(q.toLowerCase()),
+    )
         .toList();
 
     setState(() => _filtered = results);
@@ -155,16 +166,33 @@ class _AddStockScreenState extends State<AddStockScreen>
     }
   }
 
-  void _selectStock(_SearchResult stock) {
+  // ── Select stock + auto-fetch live price ──────────────────────────────────
+
+  Future<void> _selectStock(_SearchResult stock) async {
     setState(() {
       _selectedStock = stock;
       _filtered = [];
       _showDropdown = false;
+      _isFetchingPrice = true;
     });
     _dropdownCtrl.reverse();
     _searchController.text = '${stock.symbol} – ${stock.name}';
-    _priceController.text = stock.price.toStringAsFixed(2);
+    _priceController.text = ''; // clear while fetching
     _searchFocus.unfocus();
+
+    // Fetch live price via Yahoo Finance (works for all Indian NSE/BSE stocks)
+    try {
+      await _stockController.loadQuote(stock.symbol);
+      final quoteMap = _stockController.quote;
+      final livePrice = _number(quoteMap['c'] ?? quoteMap['price']);
+      if (livePrice > 0 && mounted) {
+        _priceController.text = livePrice.toStringAsFixed(2);
+      }
+    } catch (_) {
+      // Price fetch failed — user can type manually
+    } finally {
+      if (mounted) setState(() => _isFetchingPrice = false);
+    }
   }
 
   Future<void> _pickDate() async {
@@ -200,7 +228,6 @@ class _AddStockScreenState extends State<AddStockScreen>
       'platform': _platform,
     });
 
-    // ✅ Check AFTER await — errorMessage is now populated if something failed
     if (_portfolioController.errorMessage.value.isNotEmpty) {
       Get.snackbar(
         'Could not add stock',
@@ -213,7 +240,6 @@ class _AddStockScreenState extends State<AddStockScreen>
       return;
     }
 
-    // ✅ No error = success
     if (!mounted) return;
     setState(() => _stage = _Stage.success);
     _successCtrl.forward();
@@ -223,14 +249,18 @@ class _AddStockScreenState extends State<AddStockScreen>
     if (mounted) Get.offNamed(AppRoutes.DASHBOARD);
   }
 
-  bool get _canAdd => _selectedStock != null && _qtyController.text.isNotEmpty;
+  bool get _canAdd =>
+      _selectedStock != null &&
+          _qtyController.text.isNotEmpty &&
+          !_isFetchingPrice;
 
   double get _totalInvested =>
       (double.tryParse(_qtyController.text) ?? 0) *
-      (double.tryParse(_priceController.text) ?? 0);
+          (double.tryParse(_priceController.text) ?? 0);
 
   _SearchResult _searchResultFromMap(Map<String, dynamic> data) {
-    final symbol = _firstString(data, ['symbol', 'displaySymbol', '1. symbol']);
+    final symbol =
+    _firstString(data, ['symbol', 'displaySymbol', '1. symbol']);
     final name = _firstString(
       data,
       ['description', 'name', 'companyName', '2. name'],
@@ -241,19 +271,14 @@ class _AddStockScreenState extends State<AddStockScreen>
       ['exchange', 'type', '4. region'],
       fallback: 'NSE',
     );
-    return _SearchResult(
-      symbol: symbol,
-      name: name,
-      exchange: exchange,
-      price: _number(data['price'] ?? data['c']),
-    );
+    return _SearchResult(symbol: symbol, name: name, exchange: exchange);
   }
 
   String _firstString(
-    Map<String, dynamic> data,
-    List<String> keys, {
-    String fallback = '',
-  }) {
+      Map<String, dynamic> data,
+      List<String> keys, {
+        String fallback = '',
+      }) {
     for (final key in keys) {
       final value = data[key]?.toString().trim();
       if (value != null && value.isNotEmpty) return value;
@@ -298,7 +323,6 @@ class _AddStockScreenState extends State<AddStockScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Circle with check
             ScaleTransition(
               scale: _successScale,
               child: FadeTransition(
@@ -310,7 +334,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                     shape: BoxShape.circle,
                     color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     border:
-                        Border.all(color: const Color(0xFF10B981), width: 2),
+                    Border.all(color: const Color(0xFF10B981), width: 2),
                   ),
                   child: ScaleTransition(
                     scale: _checkScale,
@@ -359,8 +383,9 @@ class _AddStockScreenState extends State<AddStockScreen>
       onTap: () {
         FocusScope.of(context).unfocus();
         if (_showDropdown) {
-          _dropdownCtrl.reverse().then(
-              (_) => mounted ? setState(() => _showDropdown = false) : null);
+          _dropdownCtrl
+              .reverse()
+              .then((_) => mounted ? setState(() => _showDropdown = false) : null);
         }
       },
       child: Scaffold(
@@ -368,10 +393,7 @@ class _AddStockScreenState extends State<AddStockScreen>
         body: SafeArea(
           child: Column(
             children: [
-              // ── Header ──
               _buildHeader(),
-
-              // ── Scrollable form ──
               Expanded(
                 child: FadeTransition(
                   opacity: _entranceFade,
@@ -399,8 +421,6 @@ class _AddStockScreenState extends State<AddStockScreen>
                   ),
                 ),
               ),
-
-              // ── Add button ──
               _buildAddButton(),
             ],
           ),
@@ -409,7 +429,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Header ──
+  // ── Header ──────────────────────────────────────────────────────────────────
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
@@ -438,7 +458,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Search field + dropdown ──
+  // ── Search field + dropdown ──────────────────────────────────────────────────
   Widget _buildSearchField() {
     final isActive = _searchFocus.hasFocus;
     return Column(
@@ -446,7 +466,6 @@ class _AddStockScreenState extends State<AddStockScreen>
       children: [
         const _FieldLabel('Search Stock'),
         const SizedBox(height: 8),
-        // Search input
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           height: 52,
@@ -461,11 +480,11 @@ class _AddStockScreenState extends State<AddStockScreen>
             ),
             boxShadow: isActive
                 ? [
-                    BoxShadow(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
-                      blurRadius: 12,
-                    )
-                  ]
+              BoxShadow(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                blurRadius: 12,
+              )
+            ]
                 : null,
           ),
           child: Row(
@@ -500,7 +519,7 @@ class _AddStockScreenState extends State<AddStockScreen>
                 Container(
                   margin: const EdgeInsets.only(right: 14),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -533,20 +552,23 @@ class _AddStockScreenState extends State<AddStockScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF1A2640),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+        border: Border.all(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
       ),
       child: Column(
-        children: _filtered.map((stock) {
+        children: _filtered.asMap().entries.map((entry) {
+          final index = entry.key;
+          final stock = entry.value;
           return GestureDetector(
             onTap: () => _selectStock(stock),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                border: _filtered.indexOf(stock) > 0
+                border: index > 0
                     ? Border(
-                        top: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.04)))
+                    top: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.04)))
                     : null,
               ),
               child: Row(
@@ -556,7 +578,8 @@ class _AddStockScreenState extends State<AddStockScreen>
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                      color:
+                      const Color(0xFF6366F1).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
@@ -587,17 +610,14 @@ class _AddStockScreenState extends State<AddStockScreen>
                             style: const TextStyle(
                               color: Color(0xFF64748B),
                               fontSize: 11,
-                            )),
+                            ),
+                            overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
-                  Text(
-                    '₹${stock.price.toStringAsFixed(1)}',
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 13,
-                    ),
-                  ),
+                  // No price shown — Finnhub search doesn't return prices
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 16, color: Color(0xFF475569)),
                 ],
               ),
             ),
@@ -607,7 +627,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Qty & Price row ──
+  // ── Qty & Price row ──────────────────────────────────────────────────────────
   Widget _buildQtyPriceRow() {
     return Row(
       children: [
@@ -634,15 +654,49 @@ class _AddStockScreenState extends State<AddStockScreen>
             children: [
               const _FieldLabel('Buy Price (₹)'),
               const SizedBox(height: 8),
-              _inputBox(
+              // Show spinner while fetching live price
+              _isFetchingPrice
+                  ? Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131D2E),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF6366F1),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Fetching price...',
+                      style: TextStyle(
+                        color: Color(0xFF475569),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  : _inputBox(
                 controller: _priceController,
                 focusNode: _priceFocus,
                 hint: '0.00',
-                type: const TextInputType.numberWithOptions(decimal: true),
+                type: const TextInputType.numberWithOptions(
+                    decimal: true),
                 prefix: const Padding(
                   padding: EdgeInsets.only(right: 4),
                   child: Text('₹',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+                      style: TextStyle(
+                          color: Color(0xFF64748B), fontSize: 14)),
                 ),
               ),
             ],
@@ -652,7 +706,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Date field ──
+  // ── Date field ───────────────────────────────────────────────────────────────
   Widget _buildDateField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -667,7 +721,8 @@ class _AddStockScreenState extends State<AddStockScreen>
             decoration: BoxDecoration(
               color: const Color(0xFF131D2E),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border:
+              Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: Row(
               children: [
@@ -689,7 +744,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Platform selector ──
+  // ── Platform selector ────────────────────────────────────────────────────────
   Widget _buildPlatformField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,7 +803,6 @@ class _AddStockScreenState extends State<AddStockScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Container(
               width: 36,
               height: 4,
@@ -766,47 +820,47 @@ class _AddStockScreenState extends State<AddStockScreen>
                 )),
             const SizedBox(height: 16),
             ..._platforms.map((p) => GestureDetector(
-                  onTap: () {
-                    setState(() => _platform = p);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    margin: const EdgeInsets.only(bottom: 2),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: _platform == p
-                          ? const Color(0xFF6366F1).withValues(alpha: 0.1)
-                          : Colors.transparent,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(p,
-                            style: TextStyle(
-                              color: _platform == p
-                                  ? const Color(0xFF818CF8)
-                                  : const Color(0xFFF1F5F9),
-                              fontSize: 14,
-                              fontWeight: _platform == p
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            )),
-                        if (_platform == p)
-                          const Icon(Icons.check_rounded,
-                              size: 16, color: Color(0xFF6366F1)),
-                      ],
-                    ),
-                  ),
-                )),
+              onTap: () {
+                setState(() => _platform = p);
+                Navigator.pop(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                margin: const EdgeInsets.only(bottom: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: _platform == p
+                      ? const Color(0xFF6366F1).withValues(alpha: 0.1)
+                      : Colors.transparent,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(p,
+                        style: TextStyle(
+                          color: _platform == p
+                              ? const Color(0xFF818CF8)
+                              : const Color(0xFFF1F5F9),
+                          fontSize: 14,
+                          fontWeight: _platform == p
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        )),
+                    if (_platform == p)
+                      const Icon(Icons.check_rounded,
+                          size: 16, color: Color(0xFF6366F1)),
+                  ],
+                ),
+              ),
+            )),
           ],
         ),
       ),
     );
   }
 
-  // ── Investment preview ──
+  // ── Investment preview ───────────────────────────────────────────────────────
   Widget _buildInvestmentPreview() {
     return AnimatedBuilder(
       animation: _previewCtrl,
@@ -822,7 +876,8 @@ class _AddStockScreenState extends State<AddStockScreen>
                 color: const Color(0xFF6366F1).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
+                    color:
+                    const Color(0xFF6366F1).withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,7 +916,7 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Add button ──
+  // ── Add button ───────────────────────────────────────────────────────────────
   Widget _buildAddButton() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -878,33 +933,35 @@ class _AddStockScreenState extends State<AddStockScreen>
             borderRadius: BorderRadius.circular(18),
             gradient: _canAdd
                 ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                  )
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+            )
                 : null,
             color: _canAdd ? null : Colors.white.withValues(alpha: 0.06),
             boxShadow: _canAdd
                 ? [
-                    BoxShadow(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    )
-                  ]
+              BoxShadow(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              )
+            ]
                 : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.add_rounded,
-                  color: _canAdd ? Colors.white : const Color(0xFF64748B),
+                  color:
+                  _canAdd ? Colors.white : const Color(0xFF64748B),
                   size: 20),
               const SizedBox(width: 8),
               Text(
                 'Add to Portfolio',
                 style: TextStyle(
-                  color: _canAdd ? Colors.white : const Color(0xFF64748B),
+                  color:
+                  _canAdd ? Colors.white : const Color(0xFF64748B),
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -916,20 +973,21 @@ class _AddStockScreenState extends State<AddStockScreen>
     );
   }
 
-  // ── Helpers ──
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   Widget _iconBtn(IconData icon, {VoidCallback? onTap}) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF131D2E),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
-        ),
-      );
+    onTap: onTap,
+    child: Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: const Color(0xFF131D2E),
+        borderRadius: BorderRadius.circular(10),
+        border:
+        Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
+    ),
+  );
 
   Widget _inputBox({
     required TextEditingController controller,
@@ -945,7 +1003,8 @@ class _AddStockScreenState extends State<AddStockScreen>
         decoration: BoxDecoration(
           color: const Color(0xFF131D2E),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border:
+          Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
@@ -978,18 +1037,18 @@ class _AddStockScreenState extends State<AddStockScreen>
       );
 }
 
-// ── Reusable label ──
+// ── Reusable label ────────────────────────────────────────────────────────────
 class _FieldLabel extends StatelessWidget {
   final String text;
   const _FieldLabel(this.text);
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: const TextStyle(
-          color: Color(0xFF94A3B8),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      );
+    text,
+    style: const TextStyle(
+      color: Color(0xFF94A3B8),
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    ),
+  );
 }

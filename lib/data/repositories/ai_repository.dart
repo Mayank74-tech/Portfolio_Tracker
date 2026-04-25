@@ -50,7 +50,7 @@ class AiRepository {
 
     // Save user message to Firestore
     if (uid != null) {
-      await _firestore.addChatMessage(
+      await _saveChatMessageSafely(
         userId: uid,
         data: {
           'message': message,
@@ -69,7 +69,7 @@ class AiRepository {
         portfolioSummary: portfolioSummary,
       );
       _usingGemini = true;
-    } catch (e) {
+    } catch (_) {
       // Gemini failed — try Ollama
       try {
         response = await _ollama.generatePortfolioInsight(
@@ -87,7 +87,7 @@ class AiRepository {
 
     // Save AI response to Firestore
     if (uid != null) {
-      await _firestore.addChatMessage(
+      await _saveChatMessageSafely(
         userId: uid,
         data: {
           'message': response,
@@ -133,5 +133,16 @@ class AiRepository {
               .map((doc) => {'id': doc.id, ...doc.data()})
               .toList(),
         );
+  }
+
+  Future<void> _saveChatMessageSafely({
+    required String userId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _firestore.addChatMessage(userId: userId, data: data);
+    } catch (_) {
+      // Chat generation should keep working even if history persistence fails.
+    }
   }
 }

@@ -37,7 +37,7 @@ final _initialMessages = [
     id: 1,
     role: _Role.ai,
     text:
-        'Hello! I\'m your AI portfolio assistant powered by Llama 3. I can analyze your holdings, explain market trends, and give you personalized insights. What would you like to know?',
+        'Hello! I\'m your AI portfolio assistant. I can analyze your holdings, explain market trends, and give you personalized insights. What would you like to know?',
     time: '10:00 AM',
   ),
 ];
@@ -268,7 +268,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                     ),
                   ],
                 ),
-                const Text('Powered by Llama 3 · Running locally',
+                const Text('Powered by Gemini with Ollama fallback',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 11,
