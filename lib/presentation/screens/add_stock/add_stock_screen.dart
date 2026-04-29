@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:smart_portfolio_tracker/presentation/controllers/behavioral_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/stock_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/app_background.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 class _SearchResult {
   final String symbol;
@@ -218,12 +221,22 @@ class _AddStockScreenState extends State<AddStockScreen>
     final selected = _selectedStock;
     if (selected == null) return;
 
+    final stockPrice = double.tryParse(_priceController.text) ?? 0;
+    final portfolioValue = _portfolioController.summary['total_value'] is num
+        ? (_portfolioController.summary['total_value'] as num).toDouble()
+        : 0.0;
+
+    // Calculate seconds since this stock was last viewed (for Decision Friction)
+    final bc = Get.isRegistered<BehavioralController>()
+        ? Get.find<BehavioralController>()
+        : null;
+
     await _portfolioController.addHolding({
       'stock_symbol': selected.symbol,
       'stock_name': selected.name,
       'exchange': selected.exchange,
       'quantity': double.tryParse(_qtyController.text) ?? 0,
-      'buy_price': double.tryParse(_priceController.text) ?? 0,
+      'buy_price': stockPrice,
       'buy_date': _buyDate.toIso8601String(),
       'platform': _platform,
     });
@@ -238,6 +251,16 @@ class _AddStockScreenState extends State<AddStockScreen>
       );
       _portfolioController.clearError();
       return;
+    }
+
+    // ── Log the buy decision for behavioral insights ──────────────────────────
+    if (bc != null) {
+      await bc.logBuyDecision(
+        symbol: selected.symbol,
+        portfolioValue: portfolioValue,
+        stockPrice: stockPrice,
+        secondsSinceLastView: 0, // no prior view tracked — treated as impulsive
+      );
     }
 
     if (!mounted) return;
@@ -317,9 +340,10 @@ class _AddStockScreenState extends State<AddStockScreen>
   //  SUCCESS VIEW
   // ─────────────────────────────────────────────
   Widget _buildSuccessView() {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1120),
-      body: Center(
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -372,6 +396,7 @@ class _AddStockScreenState extends State<AddStockScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -388,9 +413,10 @@ class _AddStockScreenState extends State<AddStockScreen>
               .then((_) => mounted ? setState(() => _showDropdown = false) : null);
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
+      child: AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
           child: Column(
             children: [
               _buildHeader(),
@@ -425,6 +451,7 @@ class _AddStockScreenState extends State<AddStockScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }

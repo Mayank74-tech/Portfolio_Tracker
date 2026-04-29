@@ -29,7 +29,7 @@ class PortfolioController extends GetxController {
 
   Future<void> loadHoldings() async {
     await _runLoading(() async {
-      final data = await _repository.getHoldings();
+      final data = await _repository.getHoldingsWithPrices();
       holdings.assignAll(data);
     });
   }

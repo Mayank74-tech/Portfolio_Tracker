@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/news_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/app_background.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 class _NewsItem {
   final int id;
@@ -303,9 +305,10 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
+      () => AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
           child: Column(
             children: [
               FadeTransition(
@@ -328,6 +331,7 @@ class _MarketNewsScreenState extends State<MarketNewsScreen>
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -570,14 +574,9 @@ class _AnimatedNewsCard extends StatelessWidget {
       },
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: GlassContainer(
           margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111827),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          clipBehavior: Clip.antiAlias,
+          borderRadius: BorderRadius.circular(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

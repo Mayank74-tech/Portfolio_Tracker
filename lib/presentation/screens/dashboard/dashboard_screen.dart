@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/app_background.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 class _ChartPoint {
   final String date;
@@ -102,9 +104,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       final chartPoints = _buildChartPoints(holdings);
 
-      return Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
+      return AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -140,7 +143,19 @@ class _DashboardScreenState extends State<DashboardScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: _buildInsightsBanner(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   child: _buildQuickActions(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: _buildFinanceBanner(),
                 ),
               ),
               SliverToBoxAdapter(
@@ -216,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
         ),
-      );
+      ));
     });
   }
 
@@ -240,7 +255,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               Text(
                 'Good morning 👋',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: TextStyle(
+                    color: Color(0xFF64748B), fontSize: 13),
               ),
               SizedBox(height: 2),
               Text(
@@ -253,33 +269,69 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ],
           ),
-          Stack(
+          Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF131D2E),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08)),
-                ),
-                child: const Icon(Icons.notifications_outlined,
-                    color: Color(0xFF94A3B8), size: 18),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
+              // ── Insights button ──────────────────────
+              GestureDetector(
+                onTap: () => Get.toNamed(AppRoutes.INSIGHTS),
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  width: 40,
+                  height: 40,
+                  margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
-                    shape: BoxShape.circle,
+                    color: const Color(0xFF6366F1)
+                        .withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: const Color(0xFF0B1120), width: 1.5),
+                      color: const Color(0xFF6366F1)
+                          .withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '🧠',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
+              ),
+              // ── Notifications ────────────────────────
+              Stack(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131D2E),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white
+                            .withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_outlined,
+                      color: Color(0xFF94A3B8),
+                      size: 18,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF0B1120),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -287,7 +339,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
-
   // ── Summary Card ───────────────────────────────────────────────────────────
 
   Widget _buildSummaryCard({
@@ -476,13 +527,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ── Chart Card ─────────────────────────────────────────────────────────────
 
   Widget _buildChartCard(List<_ChartPoint> chartPoints) {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+      borderRadius: BorderRadius.circular(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -536,6 +583,87 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+
+  Widget _buildInsightsBanner() {
+    return GestureDetector(
+      onTap: () => Get.toNamed(AppRoutes.INSIGHTS),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(20),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFA855F7)
+                    .withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFA855F7)
+                      .withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  '🧠',
+                  style: TextStyle(fontSize: 22),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Behavioral Insights',
+                    style: TextStyle(
+                      color: Color(0xFFE9D5FF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Memory gaps · Attention bias · '
+                        'Decision patterns · Identity drift',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFA855F7)
+                    .withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFA855F7)
+                      .withValues(alpha: 0.4),
+                ),
+              ),
+              child: const Text(
+                'Explore',
+                style: TextStyle(
+                  color: Color(0xFFD8B4FE),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   // ── Quick Actions ──────────────────────────────────────────────────────────
 
   Widget _buildQuickActions() {
@@ -561,6 +689,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       const Color(0xFFF59E0B),
       AppRoutes.AI_CHAT,
       ),
+      (
+      Icons.psychology_outlined,
+      'Insights',
+      const Color(0xFFA855F7),
+      const Color(0xFFA855F7),
+      AppRoutes.INSIGHTS,
+      ),
     ];
 
     return Column(
@@ -568,26 +703,24 @@ class _DashboardScreenState extends State<DashboardScreen>
       children: [
         const Text(
           'Quick Actions',
-          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          style: TextStyle(
+              color: Color(0xFF94A3B8), fontSize: 13),
         ),
         const SizedBox(height: 10),
+        // ── Row 1: Add Stock + Import CSV ──────────────
         Row(
-          children: actions.asMap().entries.map((entry) {
-            final i = entry.key;
+          children: actions.sublist(0, 2).asMap().entries.map((entry) {
             final a = entry.value;
             return Expanded(
               child: GestureDetector(
                 onTap: () => Get.toNamed(a.$5),
-                child: Container(
+                child: GlassContainer(
                   margin: EdgeInsets.only(
-                      right: i < actions.length - 1 ? 10 : 0),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111827),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06)),
+                    right: entry.key == 0 ? 10 : 0,
                   ),
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 16),
+                  borderRadius: BorderRadius.circular(18),
                   child: Column(
                     children: [
                       Container(
@@ -595,9 +728,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                         height: 40,
                         decoration: BoxDecoration(
                           color: a.$3.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius:
+                          BorderRadius.circular(12),
                         ),
-                        child: Icon(a.$1, color: a.$4, size: 18),
+                        child:
+                        Icon(a.$1, color: a.$4, size: 18),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -615,10 +750,126 @@ class _DashboardScreenState extends State<DashboardScreen>
             );
           }).toList(),
         ),
+        const SizedBox(height: 10),
+        // ── Row 2: Ask AI + Insights ───────────────────
+        Row(
+          children: actions.sublist(2, 4).asMap().entries.map((entry) {
+            final a = entry.value;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => Get.toNamed(a.$5),
+                child: GlassContainer(
+                  margin: EdgeInsets.only(
+                    right: entry.key == 0 ? 10 : 0,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 14),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Row(
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: a.$3.withValues(alpha: 0.12),
+                          borderRadius:
+                          BorderRadius.circular(10),
+                        ),
+                        child: Icon(a.$1,
+                            color: a.$4, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        a.$2,
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }
 
+  Widget _buildFinanceBanner() {
+    return GestureDetector(
+      onTap: () => Get.toNamed(AppRoutes.FINANCE_DASHBOARD),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(20),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0EA5E9).withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                ),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Color(0xFF38BDF8),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Finance Dashboard',
+                    style: TextStyle(
+                      color: Color(0xFFE0F2FE),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Track bank balances, spending and spend-vs-invest trends.',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Open',
+                style: TextStyle(
+                  color: Color(0xFF7DD3FC),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   // ── Holding Tile ───────────────────────────────────────────────────────────
 
   Widget _buildHoldingTile(Map<String, dynamic> h, int index) {

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 
 import '../../data/repositories/stock_repository.dart';
 
@@ -7,6 +8,7 @@ class StockController extends GetxController {
       : _repository = stockRepository ?? StockRepository();
 
   final StockRepository _repository;
+  final Logger _log = Logger();
 
   final RxBool isLoading = false.obs;
   final RxBool isSearching = false.obs;
@@ -80,8 +82,7 @@ class StockController extends GetxController {
     final dailyData   = results[2];
     final weeklyData  = results[3];
 
-    print('quote:   $quoteData');
-    print('profile: $profileData');
+    _log.d('quote keys: ${quoteData.keys.toList()}, profile keys: ${profileData.keys.toList()}');
 
     if (quoteData.isEmpty) {
       errorMessage.value =
@@ -171,11 +172,9 @@ class StockController extends GetxController {
       }) async {
     try {
       final result = await loader();
-      print('_safeLoad[$label] success — keys: ${result.keys.toList()}');
       return result;
     } catch (e, stack) {
-      print('_safeLoad[$label] ERROR: $e');
-      print('_safeLoad[$label] STACK: $stack');
+      _log.e('_safeLoad[$label] failed', error: e, stackTrace: stack);
       return const {};
     }
   }

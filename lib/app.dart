@@ -4,6 +4,7 @@ import 'core/theme/app_theme.dart';
 import 'presentation/bindings/initial_binding.dart';
 import 'presentation/routes/app_pages.dart';
 import 'presentation/routes/app_routes.dart';
+import 'presentation/widgets/common/app_background.dart';
 
 class SmartPortfolioApp extends StatelessWidget {
   const SmartPortfolioApp({super.key});
@@ -16,8 +17,9 @@ class SmartPortfolioApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // ─── THEME ─────────────────────────────────────────
+      theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
 
       // ─── INITIAL BINDING (runs before app loads) ───────
       initialBinding: InitialBinding(),
@@ -31,6 +33,13 @@ class SmartPortfolioApp extends StatelessWidget {
       // ─── DEFAULT TRANSITION ────────────────────────────
       defaultTransition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 300),
+
+      // ─── GLOBAL GLASS BACKGROUND ───────────────────────
+      builder: (context, child) {
+        return AppBackground(
+          child: child ?? const SizedBox(),
+        );
+      },
     );
   }
 }

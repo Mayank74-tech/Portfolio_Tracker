@@ -8,7 +8,8 @@ class MainNavigationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1E),
+      extendBody: true,
+      backgroundColor: Colors.transparent,
       body: child,
       bottomNavigationBar: const BottomNavBar(),
     );

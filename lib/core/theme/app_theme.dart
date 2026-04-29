@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color background = Color(0xFF0D0D0F);
@@ -23,8 +24,8 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      fontFamily: 'SF Pro Display',
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.accent,
@@ -47,6 +48,43 @@ class AppTheme {
         showSelectedLabels: true,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        secondary: AppColors.accent,
+        surface: Colors.white,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        titleTextStyle: GoogleFonts.inter(
+          color: const Color(0xFF0D1117),
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF0D1117)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: Color(0xFF9CA3AF),
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      cardTheme: const CardThemeData(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: Color(0x1A000000),
       ),
     );
   }

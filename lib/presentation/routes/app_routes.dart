@@ -23,4 +23,8 @@ class AppRoutes {
   static const String ATTENTION_MAP   = '/insights/attention';
   static const String UNCERTAINTY     = '/insights/uncertainty';
   static const String IDENTITY_DRIFT  = '/insights/identity';
+  static const String TRANSACTIONS      = '/finance/transactions';
+  static const String SPENDING_ANALYSIS = '/finance/analysis';
+  static const String FINANCE_DASHBOARD = '/finance/dashboard';
+
 }

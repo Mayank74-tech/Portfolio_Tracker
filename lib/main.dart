@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:smart_portfolio_tracker/app.dart';
+import 'package:smart_portfolio_tracker/config/hive_config.dart';
 import 'package:smart_portfolio_tracker/data/services/local/hive_service.dart';
 import 'package:smart_portfolio_tracker/firebase_options.dart';
 
@@ -10,7 +11,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
-  await HiveService.init();
+  await HiveService.init();   // opens user_box
+  await HiveConfig.init();    // opens all behavioral boxes (attention, belief, decision, profile)
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

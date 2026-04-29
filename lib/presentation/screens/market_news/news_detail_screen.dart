@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/app_background.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 class NewsDetailScreen extends StatefulWidget {
   const NewsDetailScreen({super.key});
@@ -60,9 +62,10 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0B1120),
-      body: SafeArea(
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Column(
           children: [
             _buildTopBar(),
@@ -74,6 +77,7 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -221,13 +225,9 @@ class _NewsDetailScreenState extends State<NewsDetailScreen> {
             .toList()
         : <Map<String, dynamic>>[];
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+      borderRadius: BorderRadius.circular(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

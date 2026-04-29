@@ -6,6 +6,9 @@ import '../bindings/stock_detail_binding.dart';
 import '../bindings/ai_chat_binding.dart';
 import '../bindings/news_binding.dart';
 import '../bindings/profile_binding.dart';
+import '../screens/finance/spending_analysis_screen.dart';
+import '../screens/finance/transactions_screen.dart';
+import '../screens/finance/finance_dashboard_screen.dart';
 import '../screens/holding_screen/holdings_screen.dart';
 import '../screens/insights/attention_map_screen.dart';
 import '../screens/insights/identity_drift_screen.dart';
@@ -127,17 +130,33 @@ class AppPages {
       name: AppRoutes.INSIGHTS,
       page: () => const InsightsScreen(),
     ),
-    GetPage(name: AppRoutes.INSIGHTS,
-        page: () => const InsightsScreen()),
     GetPage(name: AppRoutes.MEMORY_REALITY,
         page: () => const MemoryRealityScreen()),
+
     GetPage(name: AppRoutes.TIME_MACHINE,
         page: () => const TimeMachineScreen()),
+
     GetPage(name: AppRoutes.ATTENTION_MAP,
         page: () => const AttentionMapScreen()),
+
     GetPage(name: AppRoutes.UNCERTAINTY,
         page: () => const UncertaintyScreen()),
+
     GetPage(name: AppRoutes.IDENTITY_DRIFT,
         page: () => const IdentityDriftScreen()),
+
+    GetPage(
+      name: AppRoutes.TRANSACTIONS,
+      page: () => const TransactionsScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.SPENDING_ANALYSIS,
+      page: () => const SpendingAnalysisScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.FINANCE_DASHBOARD,
+      page: () => const FinanceDashboardScreen(),
+      transition: Transition.rightToLeft,
+    ),
   ];
 }

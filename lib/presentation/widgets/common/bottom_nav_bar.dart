@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/core/constants/route_constants.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
@@ -28,17 +29,12 @@ class BottomNavBar extends StatelessWidget {
           path: RouteConstants.profile),
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border(
-          top:
-              BorderSide(color: Colors.white.withValues(alpha: 0.06), width: 1),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: GlassContainer(
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -48,6 +44,7 @@ class BottomNavBar extends StatelessWidget {
             }).toList(),
           ),
         ),
+      ),
       ),
     );
   }

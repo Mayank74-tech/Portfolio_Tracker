@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_portfolio_tracker/presentation/controllers/ai_controller.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/app_background.dart';
+import 'package:smart_portfolio_tracker/presentation/widgets/common/glass_container.dart';
 
 // ─────────────────────────────────────────────
 //  Data models
@@ -154,9 +156,10 @@ class _AiChatScreenState extends State<AiChatScreen>
   Widget build(BuildContext context) {
     return Obx(() => GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: Scaffold(
-            backgroundColor: const Color(0xFF0B1120),
-            body: SafeArea(
+          child: AppBackground(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
               child: Column(
                 children: [
                   // ── Header ──
@@ -178,6 +181,7 @@ class _AiChatScreenState extends State<AiChatScreen>
                 ],
               ),
             ),
+          ),
           ),
         ));
   }
@@ -315,14 +319,9 @@ class _AiChatScreenState extends State<AiChatScreen>
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) => GestureDetector(
           onTap: () => _sendMessage(_suggestions[i]),
-          child: Container(
+          child: GlassContainer(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
-            ),
+            borderRadius: BorderRadius.circular(20),
             child: Text(
               _suggestions[i],
               style: const TextStyle(
@@ -347,15 +346,11 @@ class _AiChatScreenState extends State<AiChatScreen>
         border: Border(
             top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
-      child: Container(
+      child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 52),
-        decoration: BoxDecoration(
-          color: const Color(0xFF131D2E),
+        child: GlassContainer(
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
-        ),
-        child: Row(
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             const SizedBox(width: 16),
@@ -419,6 +414,7 @@ class _AiChatScreenState extends State<AiChatScreen>
               ),
             ),
           ],
+        ),
         ),
       ),
     );

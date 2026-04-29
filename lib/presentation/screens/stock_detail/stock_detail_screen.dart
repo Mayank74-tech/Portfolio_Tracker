@@ -6,6 +6,8 @@ import 'package:smart_portfolio_tracker/presentation/controllers/stock_controlle
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 
 import '../../controllers/behavioral_controller.dart';
+import '../../widgets/common/app_background.dart';
+import '../../widgets/common/glass_container.dart';
 
 class _ChartPoint {
   final DateTime date;
@@ -177,9 +179,10 @@ class _StockDetailScreenState extends State<StockDetailScreen>
         return _buildErrorState(_stockController.errorMessage.value);
       }
 
-      return Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
+      return AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
           child: Column(
             children: [
               FadeTransition(
@@ -263,6 +266,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
             ],
           ),
         ),
+      ),
       );
     });
   }
@@ -602,15 +606,11 @@ class _StockDetailScreenState extends State<StockDetailScreen>
   // ── Chart ──────────────────────────────────────────────────────────────────
 
   Widget _buildChart(List<_ChartPoint> points, Color accent) {
-    return Container(
+    return GlassContainer(
       height: 180,
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
+      borderRadius: BorderRadius.circular(18),
       child: points.length < 2
           ? const Center(
         child: Text(
@@ -630,13 +630,9 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     required Color accent,
   }) {
     if (holding == null) {
-      return Container(
+      return GlassContainer(
         padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFF111827),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

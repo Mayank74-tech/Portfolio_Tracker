@@ -5,6 +5,8 @@ import 'package:smart_portfolio_tracker/presentation/controllers/settings_contro
 import 'package:smart_portfolio_tracker/presentation/controllers/theme_controller.dart';
 
 import '../../../data/services/local/hive_service.dart';
+import '../../widgets/common/app_background.dart';
+import '../../widgets/common/glass_container.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -76,9 +78,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           _settingsController.notificationsEnabled.value;
       final darkModeEnabled = _themeController.isDarkMode;
 
-      return Scaffold(
-        backgroundColor: const Color(0xFF0B1120),
-        body: SafeArea(
+      return AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
           child: FadeTransition(
             opacity: _entranceFade,
             child: SlideTransition(
@@ -205,6 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ),
+      ),
       );
     });
   }
@@ -238,18 +242,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildUserCard() {
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1A4F), Color(0xFF0F0D2E)],
-        ),
-        border:
-            Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.2)),
-      ),
+      borderRadius: BorderRadius.circular(24),
       child: Stack(
         children: [
           Positioned(
@@ -436,12 +431,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF111827),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
+        GlassContainer(
+          borderRadius: BorderRadius.circular(18),
           child: Column(
             children: rows.asMap().entries.map((entry) {
               final index = entry.key;
@@ -529,14 +520,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildSignOutButton() {
     return GestureDetector(
       onTap: () => Get.find<AuthController>().logout(),
-      child: Container(
+      child: GlassContainer(
         height: 56,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(18),
-          border:
-              Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.2)),
-        ),
+        borderRadius: BorderRadius.circular(18),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

@@ -19,6 +19,8 @@ class HiveConfig {
   static const String userPrefsBox       = 'user_prefs';
   static const String apiCacheBox        = 'api_cache';
   static const String apiCacheMetaBox    = 'api_cache_meta';
+  static const String bankAccountsBox    = 'bank_accounts';
+  static const String transactionsBox    = 'transactions';
 
   // ── Behavioral boxes ───────────────────────────────────────────────────────
   static const String attentionLogsBox   = 'attention_logs';
@@ -70,6 +72,8 @@ class HiveConfig {
     await _safeOpen(userPrefsBox);
     await _safeOpen(apiCacheBox);
     await _safeOpen(apiCacheMetaBox);
+    await _safeOpen(bankAccountsBox);
+    await _safeOpen(transactionsBox);
 
     // Behavioral boxes — typed
     await _safeOpenTyped<AttentionLogModel>(attentionLogsBox);
