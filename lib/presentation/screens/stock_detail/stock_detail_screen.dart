@@ -5,6 +5,8 @@ import 'package:smart_portfolio_tracker/presentation/controllers/portfolio_contr
 import 'package:smart_portfolio_tracker/presentation/controllers/stock_controller.dart';
 import 'package:smart_portfolio_tracker/presentation/routes/app_routes.dart';
 
+import '../../controllers/behavioral_controller.dart';
+
 class _ChartPoint {
   final DateTime date;
   final double price;
@@ -33,6 +35,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
   String _activeRange = '1M';
   bool _starred = false;
   bool _isRefreshing = false;
+  DateTime? _enteredAt;
 
   late final AnimationController _headerController;
   late final AnimationController _chartController;
@@ -47,6 +50,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
   @override
   void initState() {
     super.initState();
+    _enteredAt = DateTime.now();
     _stockController = Get.find<StockController>();
     _portfolioController = Get.isRegistered<PortfolioController>()
         ? Get.find<PortfolioController>()
@@ -101,6 +105,17 @@ class _StockDetailScreenState extends State<StockDetailScreen>
 
   @override
   void dispose() {
+    // ── Log attention when leaving screen ─────────────────────────────────
+    if (_enteredAt != null && _symbol.isNotEmpty) {
+      final duration =
+          DateTime.now().difference(_enteredAt!).inSeconds;
+      if (Get.isRegistered<BehavioralController>()) {
+        Get.find<BehavioralController>().logStockView(
+          symbol: _symbol,
+          durationSeconds: duration,
+        );
+      }
+    }
     _headerController.dispose();
     _chartController.dispose();
     _cardsController.dispose();
@@ -112,11 +127,10 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     if (refresh && mounted) setState(() => _isRefreshing = true);
     _stockController.clearError();
 
-    // Load portfolio holdings and stock data in parallel
     await Future.wait([
       if (_portfolioController.holdings.isEmpty)
         _portfolioController.loadHoldings(),
-      _stockController.loadAllData(_symbol),  // handles all 4 APIs internally
+      _stockController.loadAllData(_symbol),
     ]);
 
     if (refresh && mounted) setState(() => _isRefreshing = false);
@@ -146,10 +160,11 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       final changePercent = _number(quote['dp']) != 0
           ? _number(quote['dp'])
           : previousClose == 0
-              ? 0.0
-              : (priceDelta / previousClose) * 100;
+          ? 0.0
+          : (priceDelta / previousClose) * 100;
       final isGain = changePercent >= 0;
-      final accent = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+      final accent =
+      isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
       final hasAnyData =
           quote.isNotEmpty || profile.isNotEmpty || points.isNotEmpty;
@@ -212,7 +227,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                           child: SlideTransition(
                             position: _cardsSlide,
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 12),
                               child: _buildHoldingCard(
                                 holding: holding,
                                 currentPrice: currentPrice,
@@ -226,7 +242,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                           child: SlideTransition(
                             position: _cardsSlide,
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 12),
                               child: _buildCompanyCard(profile),
                             ),
                           ),
@@ -249,6 +266,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       );
     });
   }
+
+  // ── State screens ──────────────────────────────────────────────────────────
 
   Widget _buildMissingSymbolState() {
     return Scaffold(
@@ -278,10 +297,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                 const Text(
                   'Open this page from a holding or stock search result.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
                 ),
                 const SizedBox(height: 20),
                 _primaryButton(
@@ -355,6 +371,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Top bar ────────────────────────────────────────────────────────────────
+
   Widget _buildTopBar(Map<String, dynamic> profile) {
     final companyName = _cleanText(profile['name'], fallback: _symbol);
 
@@ -377,18 +395,23 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           ),
           _iconBtn(
             _starred ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: _starred ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
+            color:
+            _starred ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
             onTap: () => setState(() => _starred = !_starred),
           ),
           const SizedBox(width: 8),
           _iconBtn(
-            _isRefreshing ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
+            _isRefreshing
+                ? Icons.hourglass_top_rounded
+                : Icons.refresh_rounded,
             onTap: () => _loadData(refresh: true),
           ),
         ],
       ),
     );
   }
+
+  // ── Price header ───────────────────────────────────────────────────────────
 
   Widget _buildPriceHeader({
     required Map<String, dynamic> profile,
@@ -489,7 +512,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
             children: [
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -531,6 +554,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Range selector ─────────────────────────────────────────────────────────
+
   Widget _buildRangeSelector() {
     const ranges = ['7D', '1M', '1Y'];
 
@@ -550,17 +575,20 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
-                  color:
-                      isActive ? const Color(0xFF6366F1) : Colors.transparent,
+                  color: isActive
+                      ? const Color(0xFF6366F1)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   range,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isActive ? Colors.white : const Color(0xFF64748B),
+                    color:
+                    isActive ? Colors.white : const Color(0xFF64748B),
                     fontSize: 12,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight:
+                    isActive ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ),
@@ -571,9 +599,12 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Chart ──────────────────────────────────────────────────────────────────
+
   Widget _buildChart(List<_ChartPoint> points, Color accent) {
     return Container(
       height: 180,
+      width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
@@ -582,17 +613,16 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       ),
       child: points.length < 2
           ? const Center(
-              child: Text(
-                'Not enough price history yet',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 13,
-                ),
-              ),
-            )
+        child: Text(
+          'Not enough price history yet',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+        ),
+      )
           : _StockLineChart(data: points, color: accent),
     );
   }
+
+  // ── Holding card ───────────────────────────────────────────────────────────
 
   Widget _buildHoldingCard({
     required Map<String, dynamic>? holding,
@@ -621,10 +651,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
             const SizedBox(height: 10),
             const Text(
               'This stock is not in your portfolio yet.',
-              style: TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
             ),
             const SizedBox(height: 14),
             _primaryButton(
@@ -642,9 +669,11 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     final invested = quantity * buyPrice;
     final currentValue = quantity * currentPrice;
     final profitLoss = currentValue - invested;
-    final profitLossPercent = invested == 0 ? 0 : (profitLoss / invested) * 100;
+    final profitLossPercent =
+    invested == 0 ? 0.0 : (profitLoss / invested) * 100;
     final isGain = profitLoss >= 0;
-    final plColor = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final plColor =
+    isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     final stats = [
       ('Avg. Buy Price', '₹${_formatMoney(buyPrice)}'),
@@ -713,7 +742,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           ),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: plColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(14),
@@ -731,10 +761,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                 const SizedBox(width: 8),
                 const Text(
                   'Total P&L',
-                  style: TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                 ),
                 const Spacer(),
                 Column(
@@ -750,10 +777,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                     ),
                     Text(
                       '(${isGain ? '+' : ''}${profitLossPercent.toStringAsFixed(2)}%)',
-                      style: TextStyle(
-                        color: plColor,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: plColor, fontSize: 11),
                     ),
                   ],
                 ),
@@ -766,7 +790,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
               Expanded(
                 child: _secondaryStat(
                   label: 'Platform',
-                  value: _cleanText(holding['platform'], fallback: 'Manual'),
+                  value:
+                  _cleanText(holding['platform'], fallback: 'Manual'),
                   accent: accent,
                 ),
               ),
@@ -785,20 +810,29 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Company card ───────────────────────────────────────────────────────────
+
   Widget _buildCompanyCard(Map<String, dynamic> profile) {
     final companyName = _cleanText(profile['name'], fallback: _symbol);
     final website = _cleanText(profile['weburl'], fallback: 'Not available');
-    final marketCapValue = _number(profile['marketCapitalization']) * 1000000;
+
+    final marketCapRaw = _number(profile['marketCapitalization']);
+    final marketCapStr =
+    marketCapRaw > 0 ? _formatCompactNumber(marketCapRaw) : 'Unknown';
+
+    final ipoStr = _formatFlexibleDate(profile['ipo']);
+
+    final industry = _cleanText(
+      profile['finnhubIndustry'],
+      fallback: _cleanText(profile['sector'], fallback: 'Unknown'),
+    );
 
     final items = [
-      ('Sector', _cleanText(profile['finnhubIndustry'], fallback: 'Unknown')),
+      ('Sector', industry),
       ('Exchange', _cleanText(profile['exchange'], fallback: 'Unknown')),
       ('Country', _cleanText(profile['country'], fallback: 'Unknown')),
-      ('IPO', _formatDate(profile['ipo'])),
-      (
-        'Market Cap',
-        marketCapValue > 0 ? _formatCompactNumber(marketCapValue) : 'Unknown',
-      ),
+      ('IPO', ipoStr),
+      ('Market Cap', marketCapStr),
       ('Website', website),
     ];
 
@@ -823,10 +857,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
           const SizedBox(height: 4),
           const Text(
             'Company overview',
-            style: TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
           ),
           const SizedBox(height: 14),
           ...items.asMap().entries.map((entry) {
@@ -860,6 +891,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -872,6 +904,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
       ),
     );
   }
+
+  // ── Actions ────────────────────────────────────────────────────────────────
 
   Widget _buildActions() {
     return Row(
@@ -890,7 +924,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
             decoration: BoxDecoration(
               color: const Color(0xFF111827),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              border:
+              Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: TextButton.icon(
               onPressed: () => _loadData(refresh: true),
@@ -914,6 +949,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Reusable widgets ───────────────────────────────────────────────────────
+
   Widget _secondaryStat({
     required String label,
     required String value,
@@ -931,10 +968,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 10,
-            ),
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
           ),
           const SizedBox(height: 4),
           Text(
@@ -993,11 +1027,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
-  Widget _iconBtn(
-    IconData icon, {
-    Color? color,
-    VoidCallback? onTap,
-  }) {
+  Widget _iconBtn(IconData icon, {Color? color, VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1017,9 +1047,12 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     );
   }
 
+  // ── Static helpers ─────────────────────────────────────────────────────────
+
   static String _resolveSymbol(Object? arguments) {
     if (arguments is Map) {
-      final symbol = arguments['symbol']?.toString().trim().toUpperCase();
+      final symbol =
+      arguments['symbol']?.toString().trim().toUpperCase();
       if (symbol != null && symbol.isNotEmpty) return symbol;
     }
     if (arguments is String && arguments.trim().isNotEmpty) {
@@ -1029,13 +1062,14 @@ class _StockDetailScreenState extends State<StockDetailScreen>
   }
 
   static Map<String, dynamic>? _findHolding(
-    List<Map<String, dynamic>> holdings,
-    String symbol,
-  ) {
+      List<Map<String, dynamic>> holdings,
+      String symbol,
+      ) {
     for (final holding in holdings) {
       final current =
-          (holding['stock_symbol'] ?? holding['symbol'])?.toString().trim();
-      if (current != null && current.toUpperCase() == symbol.toUpperCase()) {
+      (holding['stock_symbol'] ?? holding['symbol'])?.toString().trim();
+      if (current != null &&
+          current.toUpperCase() == symbol.toUpperCase()) {
         return holding;
       }
     }
@@ -1053,6 +1087,7 @@ class _StockDetailScreenState extends State<StockDetailScreen>
 
     final fallbackSeries = _seriesMap(dailyData['Time Series (Daily)']);
     final series = rawSeries.isNotEmpty ? rawSeries : fallbackSeries;
+
     final desiredCount = switch (range) {
       '7D' => 7,
       '1Y' => 52,
@@ -1067,8 +1102,9 @@ class _StockDetailScreenState extends State<StockDetailScreen>
 
       final value = entry.value is Map
           ? _number(
-              (entry.value as Map)['4. close'] ?? (entry.value as Map)['close'],
-            )
+        (entry.value as Map)['4. close'] ??
+            (entry.value as Map)['close'],
+      )
           : 0.0;
 
       if (value <= 0) continue;
@@ -1121,7 +1157,8 @@ class _StockDetailScreenState extends State<StockDetailScreen>
   }
 
   static String _formatMoney(double value, {int decimals = 2}) {
-    final pattern = decimals == 0 ? '#,##,##0' : '#,##,##0.${'0' * decimals}';
+    final pattern =
+    decimals == 0 ? '#,##,##0' : '#,##,##0.${'0' * decimals}';
     return NumberFormat(pattern, 'en_IN').format(value);
   }
 
@@ -1147,16 +1184,30 @@ class _StockDetailScreenState extends State<StockDetailScreen>
     if (date == null) return 'Unknown';
     return DateFormat('d MMM y').format(date);
   }
+
+  static String _formatFlexibleDate(Object? value) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty || raw == 'null') return 'Unknown';
+
+    final fullDate = DateTime.tryParse(raw);
+    if (fullDate != null) {
+      return DateFormat('d MMM y').format(fullDate);
+    }
+
+    final year = int.tryParse(raw);
+    if (year != null && year > 1800 && year < 2100) return raw;
+
+    return 'Unknown';
+  }
 }
+
+// ── Chart widget ───────────────────────────────────────────────────────────────
 
 class _StockLineChart extends StatefulWidget {
   final List<_ChartPoint> data;
   final Color color;
 
-  const _StockLineChart({
-    required this.data,
-    required this.color,
-  });
+  const _StockLineChart({required this.data, required this.color});
 
   @override
   State<_StockLineChart> createState() => _StockLineChartState();
@@ -1197,20 +1248,32 @@ class _StockLineChartState extends State<_StockLineChart>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _progress,
-      builder: (_, __) {
-        return CustomPaint(
-          painter: _StockChartPainter(
-            data: widget.data,
-            color: widget.color,
-            progress: _progress.value,
-          ),
+    // LayoutBuilder gives us the real available width & height
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height =
+        constraints.maxHeight.isFinite ? constraints.maxHeight : 150.0;
+
+        return AnimatedBuilder(
+          animation: _progress,
+          builder: (_, __) {
+            return CustomPaint(
+              size: Size(width, height),
+              painter: _StockChartPainter(
+                data: widget.data,
+                color: widget.color,
+                progress: _progress.value,
+              ),
+            );
+          },
         );
       },
     );
   }
 }
+
+// ── Chart painter ──────────────────────────────────────────────────────────────
 
 class _StockChartPainter extends CustomPainter {
   final List<_ChartPoint> data;
@@ -1225,46 +1288,54 @@ class _StockChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
+    // Guard: never paint on a zero-size or empty canvas
+    if (data.length < 2 || size.width <= 0 || size.height <= 0) return;
 
     const labelHeight = 20.0;
     final chartHeight = size.height - labelHeight;
-    final prices = data.map((point) => point.price).toList();
+    if (chartHeight <= 0) return;
+
+    final prices = data.map((p) => p.price).toList();
     final minValue = prices.reduce((a, b) => a < b ? a : b);
     final maxValue = prices.reduce((a, b) => a > b ? a : b);
-    final range = ((maxValue - minValue)).clamp(1.0, double.maxFinite);
+    // Ensure range is never zero (flat line / identical prices)
+    final range = (maxValue - minValue).clamp(1.0, double.maxFinite);
     final verticalPadding = range * 0.15;
+    final totalRange = range + verticalPadding * 2;
 
+    // Build all pixel points
     final allPoints = <Offset>[];
-    for (int index = 0; index < data.length; index++) {
-      final x = index / (data.length - 1) * size.width;
+    for (int i = 0; i < data.length; i++) {
+      final x = data.length == 1
+          ? size.width / 2
+          : i / (data.length - 1) * size.width;
       final y = chartHeight -
-          ((data[index].price - minValue + verticalPadding) /
-                  (range + verticalPadding * 2)) *
+          ((data[i].price - minValue + verticalPadding) / totalRange) *
               chartHeight;
       allPoints.add(Offset(x, y));
     }
 
+    // Slice visible points according to animation progress
     final stopIndex = progress * (allPoints.length - 1);
-    final fullIndex = stopIndex.floor();
-    final visible = allPoints.sublist(0, fullIndex + 1);
+    final fullIndex = stopIndex.floor().clamp(0, allPoints.length - 1);
+    final visible = List<Offset>.from(allPoints.sublist(0, fullIndex + 1));
+
     if (fullIndex < allPoints.length - 1) {
       final fraction = stopIndex - fullIndex;
-      final start = allPoints[fullIndex];
-      final end = allPoints[fullIndex + 1];
-      visible.add(
-        Offset(
-          start.dx + (end.dx - start.dx) * fraction,
-          start.dy + (end.dy - start.dy) * fraction,
-        ),
-      );
+      final s = allPoints[fullIndex];
+      final e = allPoints[fullIndex + 1];
+      visible.add(Offset(
+        s.dx + (e.dx - s.dx) * fraction,
+        s.dy + (e.dy - s.dy) * fraction,
+      ));
     }
 
     if (visible.length < 2) return;
 
+    // Fill gradient under the line
     final fillPath = Path()..moveTo(visible.first.dx, chartHeight);
-    for (final point in visible) {
-      fillPath.lineTo(point.dx, point.dy);
+    for (final pt in visible) {
+      fillPath.lineTo(pt.dx, pt.dy);
     }
     fillPath
       ..lineTo(visible.last.dx, chartHeight)
@@ -1276,15 +1347,19 @@ class _StockChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [color.withValues(alpha: 0.30), color.withValues(alpha: 0.0)],
-        ).createShader(Rect.fromLTWH(0.0, 0.0, size.width, chartHeight)),
+          colors: [
+            color.withValues(alpha: 0.30),
+            color.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, chartHeight)),
     );
 
-    final linePath = Path()..moveTo(visible.first.dx, visible.first.dy);
-    for (int index = 1; index < visible.length; index++) {
-      linePath.lineTo(visible[index].dx, visible[index].dy);
+    // Line
+    final linePath = Path()
+      ..moveTo(visible.first.dx, visible.first.dy);
+    for (int i = 1; i < visible.length; i++) {
+      linePath.lineTo(visible[i].dx, visible[i].dy);
     }
-
     canvas.drawPath(
       linePath,
       Paint()
@@ -1295,38 +1370,33 @@ class _StockChartPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    final lastPoint = visible.last;
-    canvas.drawCircle(lastPoint, 5, Paint()..color = color);
-    canvas.drawCircle(lastPoint, 3, Paint()..color = Colors.white);
+    // End dot
+    final last = visible.last;
+    canvas.drawCircle(last, 5, Paint()..color = color);
+    canvas.drawCircle(last, 3, Paint()..color = Colors.white);
 
-    const textStyle = TextStyle(
-      color: Color(0xFF475569),
-      fontSize: 9,
-    );
+    // X-axis labels
+    const textStyle = TextStyle(color: Color(0xFF475569), fontSize: 9);
     final step = data.length > 6 ? (data.length / 6).ceil() : 1;
 
-    for (int index = 0; index < data.length; index += step) {
+    for (int i = 0; i < data.length; i += step) {
       final textPainter = TextPainter(
-        text: TextSpan(text: data[index].label, style: textStyle),
+        text: TextSpan(text: data[i].label, style: textStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      final x = (index / (data.length - 1) * size.width).toDouble();
-      textPainter.paint(
-        canvas,
-        Offset(
-          (x - textPainter.width / 2)
-              .clamp(0.0, size.width - textPainter.width)
-              .toDouble(),
-          (chartHeight + 4.0).toDouble(),
-        ),
-      );
+
+      final x = data.length == 1
+          ? size.width / 2
+          : i / (data.length - 1) * size.width;
+
+      final labelX = (x - textPainter.width / 2)
+          .clamp(0.0, (size.width - textPainter.width).clamp(0.0, size.width));
+
+      textPainter.paint(canvas, Offset(labelX, chartHeight + 4.0));
     }
   }
 
   @override
-  bool shouldRepaint(covariant _StockChartPainter oldDelegate) {
-    return oldDelegate.data != data ||
-        oldDelegate.color != color ||
-        oldDelegate.progress != progress;
-  }
+  bool shouldRepaint(covariant _StockChartPainter old) =>
+      old.data != data || old.color != color || old.progress != progress;
 }

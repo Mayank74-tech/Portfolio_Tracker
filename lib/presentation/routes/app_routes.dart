@@ -16,4 +16,11 @@ class AppRoutes {
   static const String NEWS_DETAIL = '/news-detail';
   static const String PROFILE = '/profile';
   static const String SUCCESS = '/success';
+  static const String HOLDINGS = '/holdings';
+  static const String INSIGHTS = '/insights';
+  static const String MEMORY_REALITY  = '/insights/memory';
+  static const String TIME_MACHINE    = '/insights/time-machine';
+  static const String ATTENTION_MAP   = '/insights/attention';
+  static const String UNCERTAINTY     = '/insights/uncertainty';
+  static const String IDENTITY_DRIFT  = '/insights/identity';
 }

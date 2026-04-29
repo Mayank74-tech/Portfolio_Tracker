@@ -6,6 +6,13 @@ import '../bindings/stock_detail_binding.dart';
 import '../bindings/ai_chat_binding.dart';
 import '../bindings/news_binding.dart';
 import '../bindings/profile_binding.dart';
+import '../screens/holding_screen/holdings_screen.dart';
+import '../screens/insights/attention_map_screen.dart';
+import '../screens/insights/identity_drift_screen.dart';
+import '../screens/insights/insights_screen.dart';
+import '../screens/insights/memory_reality_screen.dart';
+import '../screens/insights/time_machine_screen.dart';
+import '../screens/insights/uncertainty_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -112,5 +119,25 @@ class AppPages {
       page: () => const SuccessScreen(),
       transition: Transition.zoom,
     ),
+
+    GetPage(name: AppRoutes.HOLDINGS,
+        page: () => const HoldingsScreen()),
+
+    GetPage(
+      name: AppRoutes.INSIGHTS,
+      page: () => const InsightsScreen(),
+    ),
+    GetPage(name: AppRoutes.INSIGHTS,
+        page: () => const InsightsScreen()),
+    GetPage(name: AppRoutes.MEMORY_REALITY,
+        page: () => const MemoryRealityScreen()),
+    GetPage(name: AppRoutes.TIME_MACHINE,
+        page: () => const TimeMachineScreen()),
+    GetPage(name: AppRoutes.ATTENTION_MAP,
+        page: () => const AttentionMapScreen()),
+    GetPage(name: AppRoutes.UNCERTAINTY,
+        page: () => const UncertaintyScreen()),
+    GetPage(name: AppRoutes.IDENTITY_DRIFT,
+        page: () => const IdentityDriftScreen()),
   ];
 }

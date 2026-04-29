@@ -24,9 +24,18 @@ class StockRepository {
   static const Duration _profileTtl = Duration(days: 7);
   static const Duration _historyTtl = Duration(hours: 24);
 
+  // In StockRepository — add this method
+  Future<void> clearProfileCache(String symbol) async {
+    await CacheManager.remove('company-profile:${symbol.toUpperCase()}');
+    await CacheManager.remove('quote:${symbol.toUpperCase()}');
+    await CacheManager.remove('daily-history:${symbol.toUpperCase()}:full');
+    await CacheManager.remove('weekly-history:${symbol.toUpperCase()}');
+  }
+
   // ── Quote ──────────────────────────────────────────────────────────────────
   // Yahoo Finance is primary for Indian stocks (free, no key, accurate).
   // Finnhub is used as fallback for US/global symbols.
+
 
   Future<Map<String, dynamic>> getQuote(String symbol) {
     return _cachedMap(
@@ -205,10 +214,19 @@ class StockRepository {
     required Future<Map<String, dynamic>> Function() loader,
   }) async {
     final cached = await CacheManager.get<Object>(key);
-    if (cached is Map) return _stringKeyedMap(cached);
+    if (cached is Map) {
+      final map = _stringKeyedMap(cached);
+      // ── Only return cache if it actually has data ──────────────────────
+      if (map.isNotEmpty) return map;
+    }
 
     final data = await loader();
-    await CacheManager.put(key, data, ttl: ttl);
+
+    // ── Only cache successful (non-empty) responses ──────────────────────
+    if (data.isNotEmpty) {
+      await CacheManager.put(key, data, ttl: ttl);
+    }
+
     return data;
   }
 

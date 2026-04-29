@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 /// Fetches stock data from Yahoo Finance (no API key required).
@@ -35,73 +36,149 @@ class YahooFinanceService {
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final result = body['chart']?['result'];
+    if (result is! List || result.isEmpty) return const {};
+
+    final data   = result[0] as Map<String, dynamic>;
+    final meta   = data['meta'] as Map<String, dynamic>? ?? {};
+
+    debugPrint('Quote meta keys: ${meta.keys.toList()}');
+    debugPrint('Quote meta sample: ${meta.toString().substring(0, meta.toString().length.clamp(0, 400))}');
+
+    final current = _toDouble(meta['regularMarketPrice']);
+
+    // previousClose: try multiple keys Yahoo uses
+    final prev = _toDouble(
+      meta['chartPreviousClose'] ??
+          meta['previousClose'] ??
+          meta['regularMarketPreviousClose'],
+    );
+
+    final change    = current - prev;
+    final changePct = prev == 0 ? 0.0 : (change / prev) * 100;
+
+    return {
+      'c':  current,
+      'pc': prev,
+      'd':  change,
+      'dp': changePct,
+      'o':  _toDouble(meta['regularMarketOpen']),
+      'h':  _toDouble(meta['regularMarketDayHigh']),
+      'l':  _toDouble(meta['regularMarketDayLow']),
+      'v':  _toDouble(meta['regularMarketVolume']),
+      't':  meta['regularMarketTime'] ?? 0,
+    };
+  }
+  // ── Company Profile ────────────────────────────────────────────────────────
+  /// Returns a profile map using the /v8/finance/chart endpoint
+  /// (no crumb/cookie required — same endpoint used for quotes).
+  Future<Map<String, dynamic>> getCompanyProfile(String symbol) async {
+    final ticker = _toYahooTicker(symbol);
+
+    // v8/chart works without crumb — extract meta for profile data
+    final url = Uri.https(
+      'query1.finance.yahoo.com',
+      '/v8/finance/chart/$ticker',
+      {
+        'interval': '1d',
+        'range': '1d',
+        'includePrePost': 'false',
+      },
+    );
+
+    debugPrint('Yahoo profile (v8) URL: $url');
+
+    final response = await _client.get(url, headers: _headers);
+
+    debugPrint('Yahoo profile (v8) status: ${response.statusCode}');
+
+    _checkStatus(response, 'Yahoo Finance profile (v8)');
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final result = body['chart']?['result'];
+
     if (result is! List || result.isEmpty) {
+      debugPrint('Yahoo profile (v8): empty result');
       return const {};
     }
 
     final data = result[0] as Map<String, dynamic>;
     final meta = data['meta'] as Map<String, dynamic>? ?? {};
 
-    final current = _toDouble(meta['regularMarketPrice']);
-    final prev = _toDouble(meta['chartPreviousClose'] ?? meta['previousClose']);
-    final change = current - prev;
-    final changePct = prev == 0 ? 0.0 : (change / prev) * 100;
+    debugPrint('Yahoo profile meta keys: ${meta.keys.toList()}');
+    debugPrint('Yahoo profile meta: $meta');
+
+    // meta contains: symbol, exchangeName, fullExchangeName, currency,
+    // instrumentType, longName, shortName, regularMarketPrice,
+    // marketCap (sometimes), timezone, etc.
+
+    final longName = _nonEmpty(meta['longName']?.toString());
+    final shortName = _nonEmpty(meta['shortName']?.toString());
+    final exchangeName = _nonEmpty(meta['exchangeName']?.toString());
+    final fullExchangeName = _nonEmpty(meta['fullExchangeName']?.toString());
+    final currency = _nonEmpty(meta['currency']?.toString());
+    final instrumentType = _nonEmpty(meta['instrumentType']?.toString());
+
+    // Market cap is not always in v8 meta, but try anyway
+    final marketCap = _toDouble(meta['marketCap']);
+
+    // Derive country and exchange from known exchange codes
+    final exchange = fullExchangeName ?? exchangeName ?? 'NSE';
+    final country = _countryFromExchange(exchange);
+    final sector = _sectorFromInstrumentType(instrumentType);
 
     return {
-      'c': current,
-      'pc': prev,
-      'd': change,
-      'dp': changePct,
-      'o': _toDouble(meta['regularMarketOpen']),
-      'h': _toDouble(meta['regularMarketDayHigh']),
-      'l': _toDouble(meta['regularMarketDayLow']),
-      'v': meta['regularMarketVolume'] ?? 0,
-    };
-  }
-
-  // ── Company Profile ────────────────────────────────────────────────────────
-
-  /// Returns a profile map compatible with Finnhub profile keys:
-  /// name, exchange, country, finnhubIndustry, weburl, ipo, marketCapitalization
-  Future<Map<String, dynamic>> getCompanyProfile(String symbol) async {
-    final ticker = _toYahooTicker(symbol);
-    final url = Uri.https(
-      'query1.finance.yahoo.com',
-      '/v10/finance/quoteSummary/$ticker',
-      {'modules': 'assetProfile,summaryDetail,price'},
-    );
-
-    final response = await _client.get(url, headers: _headers);
-    _checkStatus(response, 'Yahoo Finance profile');
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final result = body['quoteSummary']?['result'];
-    if (result is! List || result.isEmpty) return const {};
-
-    final data = result[0] as Map<String, dynamic>;
-    final asset = data['assetProfile'] as Map<String, dynamic>? ?? {};
-    final price = data['price'] as Map<String, dynamic>? ?? {};
-    final summary = data['summaryDetail'] as Map<String, dynamic>? ?? {};
-
-    final marketCap = _toDouble(
-      price['marketCap']?['raw'] ?? summary['marketCap']?['raw'],
-    );
-
-    return {
-      'name': price['longName'] ?? price['shortName'] ?? symbol,
-      'exchange': price['exchangeName'] ?? 'NSE',
-      'country': asset['country'] ?? 'India',
-      'finnhubIndustry': asset['industry'] ?? asset['sector'] ?? 'Unknown',
-      'weburl': asset['website'] ?? '',
-      'ipo': asset['foundedYear']?.toString() ?? '',
-      // Yahoo gives full market cap in INR; Finnhub stores in millions USD
-      // We store raw INR value and format it ourselves
+      'name': longName ?? shortName ?? symbol,
+      'exchange': exchange,
+      'country': country,
+      'finnhubIndustry': sector,
+      'weburl': '',
+      'ipo': '',
       'marketCapitalization': marketCap,
-      'currency': price['currency'] ?? 'INR',
-      'sector': asset['sector'] ?? '',
+      'currency': currency ?? 'INR',
+      'sector': sector,
+      'symbol': meta['symbol'] ?? ticker,
+      'timezone': meta['exchangeTimezoneName'] ?? '',
     };
   }
 
+  /// Maps known exchange names to countries.
+  static String _countryFromExchange(String exchange) {
+    const map = {
+      'NSE': 'India',
+      'BSE': 'India',
+      'NMS': 'USA',
+      'NGM': 'USA',
+      'NYQ': 'USA',
+      'LSE': 'UK',
+      'TYO': 'Japan',
+      'HKG': 'Hong Kong',
+      'SHH': 'China',
+      'SHZ': 'China',
+    };
+    for (final entry in map.entries) {
+      if (exchange.toUpperCase().contains(entry.key)) return entry.value;
+    }
+    return 'Unknown';
+  }
+
+  /// Maps Yahoo instrument type to a readable sector string.
+  static String _sectorFromInstrumentType(String? type) {
+    if (type == null) return 'Equity';
+    switch (type.toUpperCase()) {
+      case 'EQUITY': return 'Equity';
+      case 'ETF':    return 'ETF';
+      case 'MUTUALFUND': return 'Mutual Fund';
+      case 'FUTURE': return 'Futures';
+      case 'INDEX':  return 'Index';
+      default:       return type;
+    }
+  }
+
+  /// Returns the string if non-null and non-empty, otherwise null.
+  static String? _nonEmpty(Object? value) {
+    final s = value?.toString().trim();
+    return (s == null || s.isEmpty || s == 'null') ? null : s;
+  }
   // ── Daily Time Series ──────────────────────────────────────────────────────
 
   /// Returns data in Alpha Vantage format so existing chart code works:

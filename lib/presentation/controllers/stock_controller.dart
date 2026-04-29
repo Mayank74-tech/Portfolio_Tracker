@@ -21,6 +21,7 @@ class StockController extends GetxController {
   final RxMap<String, dynamic> weeklyTimeSeries = <String, dynamic>{}.obs;
   final RxMap<String, dynamic> rsi = <String, dynamic>{}.obs;
 
+
   // ── Search ────────────────────────────────────────────────────────────────
 
   Future<void> searchStocks(String query) async {
@@ -43,11 +44,6 @@ class StockController extends GetxController {
 
   // ── Load all stock data in parallel (main entry point from detail screen) ─
 
-  /// Loads quote, profile, daily + weekly time series all at once.
-  ///
-  /// Only [quote] is treated as required — if it fails the screen shows an
-  /// error. Profile and chart data failures are silently swallowed so the
-  /// screen still renders with whatever data is available.
   Future<void> loadAllData(String symbol) async {
     final sym = _normalizeSymbol(symbol);
     selectedSymbol.value = sym;
@@ -55,31 +51,38 @@ class StockController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
 
-    // Clear stale data from any previous symbol
     quote.clear();
     companyProfile.clear();
     dailyTimeSeries.clear();
     weeklyTimeSeries.clear();
 
-    // Run everything in parallel — failures are isolated per call
+    // ── Clear stale cache before loading ──────────────────────────────────
+    await _repository.clearProfileCache(sym);
+
     final results = await Future.wait([
-      _safeLoad(() => _repository.getQuote(sym)),           // index 0 — required
-      _safeLoad(() => _repository.getCompanyProfile(sym)),  // index 1 — optional
-      _safeLoad(() => _repository.getDailyTimeSeries(       // index 2 — optional
-        _alphaVantageSymbol(sym),
-        outputSize: 'full',
-      )),
-      _safeLoad(() => _repository.getWeeklyTimeSeries(      // index 3 — optional
-        _alphaVantageSymbol(sym),
-      )),
+      _safeLoad(() => _repository.getQuote(sym), label: 'quote'),
+      _safeLoad(() => _repository.getCompanyProfile(sym), label: 'profile'),
+      _safeLoad(
+            () => _repository.getDailyTimeSeries(
+          _alphaVantageSymbol(sym),
+          outputSize: 'compact', // ← was 'full' (premium only)
+        ),
+        label: 'daily',
+      ),
+      _safeLoad(
+            () => _repository.getWeeklyTimeSeries(_alphaVantageSymbol(sym)),
+        label: 'weekly',
+      ),
     ]);
 
-    final quoteData    = results[0];
-    final profileData  = results[1];
-    final dailyData    = results[2];
-    final weeklyData   = results[3];
+    final quoteData   = results[0];
+    final profileData = results[1];
+    final dailyData   = results[2];
+    final weeklyData  = results[3];
 
-    // Quote is the only required piece — empty map means the API failed
+    print('quote:   $quoteData');
+    print('profile: $profileData');
+
     if (quoteData.isEmpty) {
       errorMessage.value =
       'Could not load data for $sym. '
@@ -95,6 +98,7 @@ class StockController extends GetxController {
 
     isLoading.value = false;
   }
+
 
   // ── Individual loaders (kept for backward-compat with other screens) ──────
 
@@ -162,11 +166,16 @@ class StockController extends GetxController {
   /// Catches any exception and returns an empty map instead of throwing.
   /// This lets parallel calls fail silently for non-critical data.
   Future<Map<String, dynamic>> _safeLoad(
-      Future<Map<String, dynamic>> Function() loader,
-      ) async {
+      Future<Map<String, dynamic>> Function() loader, {
+        String label = 'unknown',
+      }) async {
     try {
-      return await loader();
-    } catch (_) {
+      final result = await loader();
+      print('_safeLoad[$label] success — keys: ${result.keys.toList()}');
+      return result;
+    } catch (e, stack) {
+      print('_safeLoad[$label] ERROR: $e');
+      print('_safeLoad[$label] STACK: $stack');
       return const {};
     }
   }

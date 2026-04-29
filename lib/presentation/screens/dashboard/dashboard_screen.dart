@@ -33,14 +33,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     _listController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
 
-    _cardFade = CurvedAnimation(parent: _cardController, curve: Curves.easeIn);
-    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _cardController, curve: Curves.easeOutCubic));
+    _cardFade =
+        CurvedAnimation(parent: _cardController, curve: Curves.easeIn);
+    _cardSlide =
+        Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero).animate(
+          CurvedAnimation(parent: _cardController, curve: Curves.easeOutCubic),
+        );
 
     _cardController.forward();
     Future.delayed(
-        const Duration(milliseconds: 200), () => _listController.forward());
+      const Duration(milliseconds: 200),
+          () => _listController.forward(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _portfolioController.loadPortfolio();
     });
@@ -56,7 +60,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   List<_ChartPoint> _buildChartPoints(List<Map<String, dynamic>> holdings) {
     if (holdings.isEmpty) return [];
 
-    // Sort holdings by buy_date ascending
     final sorted = [...holdings];
     sorted.sort((a, b) {
       final aDate = a['buy_date']?.toString() ?? '';
@@ -64,15 +67,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       return aDate.compareTo(bDate);
     });
 
-    final points = <_ChartPoint>[];
-
-    // Always start from 0
-    points.add(const _ChartPoint('Start', 0));
+    final points = <_ChartPoint>[const _ChartPoint('Start', 0)];
 
     double cumulative = 0;
     for (final h in sorted) {
       final rawDate = h['buy_date']?.toString() ?? '';
-      final date = rawDate.length >= 10 ? rawDate.substring(5, 10) : '?';
+      final date =
+      rawDate.length >= 10 ? rawDate.substring(5, 10) : '?';
       final value = _asDouble(h['current_price'] ?? h['buy_price']) *
           _asDouble(h['quantity']);
       cumulative += value;
@@ -93,7 +94,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       final totalPLPct = _asDouble(summary['profit_loss_percent']);
       final todayChange = _asDouble(summary['today_change']);
 
-      // Use P&L as fallback when todayChange is 0 (no live prices)
       final displayChange = todayChange != 0 ? todayChange : totalPL;
       final displayChangePct = todayChange != 0
           ? (totalValue == 0 ? 0.0 : (todayChange / totalValue) * 100)
@@ -105,115 +105,114 @@ class _DashboardScreenState extends State<DashboardScreen>
       return Scaffold(
         backgroundColor: const Color(0xFF0B1120),
         body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader()),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: FadeTransition(
-                          opacity: _cardFade,
-                          child: SlideTransition(
-                            position: _cardSlide,
-                            child: _buildSummaryCard(
-                              totalValue: totalValue,
-                              totalInvested: totalInvested,
-                              totalPL: totalPL,
-                              totalPLPct: totalPLPct,
-                              displayChange: displayChange,
-                              displayChangePct: displayChangePct,
-                              isDisplayGain: isDisplayGain,
-                              isTodayChange: todayChange != 0,
-                              holdingCount: holdings.length,
-                            ),
-                          ),
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader()),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: FadeTransition(
+                    opacity: _cardFade,
+                    child: SlideTransition(
+                      position: _cardSlide,
+                      child: _buildSummaryCard(
+                        totalValue: totalValue,
+                        totalInvested: totalInvested,
+                        totalPL: totalPL,
+                        totalPLPct: totalPLPct,
+                        displayChange: displayChange,
+                        displayChangePct: displayChangePct,
+                        isDisplayGain: isDisplayGain,
+                        isTodayChange: todayChange != 0,
+                        holdingCount: holdings.length,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: _buildChartCard(chartPoints),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                  child: _buildQuickActions(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'My Holdings',
+                        style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: _buildChartCard(chartPoints),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: _buildQuickActions(),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      GestureDetector(
+                        onTap: () => Get.toNamed(AppRoutes.HOLDINGS),
+                        child: const Row(
                           children: [
-                            const Text(
-                              'My Holdings',
+                            Text(
+                              'View All',
                               style: TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 13,
+                                color: Color(0xFF6366F1),
+                                fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {},
-                              child: const Row(
-                                children: [
-                                  Text('View All',
-                                      style: TextStyle(
-                                        color: Color(0xFF6366F1),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      )),
-                                  SizedBox(width: 2),
-                                  Icon(Icons.chevron_right_rounded,
-                                      color: Color(0xFF6366F1), size: 16),
-                                ],
-                              ),
+                            SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF6366F1),
+                              size: 16,
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    if (_portfolioController.isLoading.value)
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xFF6366F1)),
-                          ),
-                        ),
-                      )
-                    else if (holdings.isEmpty)
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Center(
-                            child: Text(
-                              'No holdings yet. Add your first stock.',
-                              style: TextStyle(
-                                  color: Color(0xFF64748B), fontSize: 13),
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (ctx, i) => _buildHoldingTile(holdings[i], i),
-                          childCount: holdings.length,
-                        ),
-                      ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              if (_portfolioController.isLoading.value)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFF6366F1)),
+                    ),
+                  ),
+                )
+              else if (holdings.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'No holdings yet. Add your first stock.',
+                        style: TextStyle(
+                            color: Color(0xFF64748B), fontSize: 13),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                        (ctx, i) => _buildHoldingTile(holdings[i], i),
+                    childCount: holdings.length,
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
         ),
@@ -221,7 +220,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  // ── Header ──
+  // ── Header ─────────────────────────────────────────────────────────────────
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -238,15 +238,19 @@ class _DashboardScreenState extends State<DashboardScreen>
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Good morning 👋',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+              Text(
+                'Good morning 👋',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
               SizedBox(height: 2),
-              Text('Hi, Investor!',
-                  style: TextStyle(
-                    color: Color(0xFFF1F5F9),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  )),
+              Text(
+                'Hi, Investor!',
+                style: TextStyle(
+                  color: Color(0xFFF1F5F9),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           Stack(
@@ -257,8 +261,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 decoration: BoxDecoration(
                   color: const Color(0xFF131D2E),
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: const Icon(Icons.notifications_outlined,
                     color: Color(0xFF94A3B8), size: 18),
@@ -272,8 +276,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFF6366F1),
                     shape: BoxShape.circle,
-                    border:
-                        Border.all(color: const Color(0xFF0B1120), width: 1.5),
+                    border: Border.all(
+                        color: const Color(0xFF0B1120), width: 1.5),
                   ),
                 ),
               ),
@@ -284,7 +288,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ── Summary Card ──
+  // ── Summary Card ───────────────────────────────────────────────────────────
+
   Widget _buildSummaryCard({
     required double totalValue,
     required double totalInvested,
@@ -297,9 +302,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     required int holdingCount,
   }) {
     final isGain = totalPL >= 0;
-    final plColor = isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final plColor =
+    isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
     final changeColor =
-        isDisplayGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    isDisplayGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -308,10 +314,16 @@ class _DashboardScreenState extends State<DashboardScreen>
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1A4F), Color(0xFF1A1235), Color(0xFF0F0D2E)],
+          colors: [
+            Color(0xFF1E1A4F),
+            Color(0xFF1A1235),
+            Color(0xFF0F0D2E),
+          ],
         ),
         border: Border.all(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.2), width: 1),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Stack(
         children: [
@@ -335,11 +347,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Total Portfolio Value',
-                  style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
+              const Text(
+                'Total Portfolio Value',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 6),
               Text(
                 '₹${_formatInr(totalValue, 0)}',
@@ -359,29 +374,34 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ? Icons.trending_up_rounded
                         : Icons.trending_down_rounded,
                     label:
-                        '${displayChange >= 0 ? "+" : "-"}₹${_formatInr(displayChange.abs(), 0)} ${isTodayChange ? "Today" : "P&L"}',
+                    '${displayChange >= 0 ? "+" : "-"}₹${_formatInr(displayChange.abs(), 0)} '
+                        '${isTodayChange ? "Today" : "P&L"}',
                     color: changeColor,
                     bg: changeColor.withValues(alpha: 0.15),
                   ),
                   const SizedBox(width: 8),
                   _badge(
                     label:
-                        '${displayChangePct >= 0 ? "+" : ""}${displayChangePct.toStringAsFixed(2)}%',
+                    '${displayChangePct >= 0 ? "+" : ""}${displayChangePct.toStringAsFixed(2)}%',
                     color: changeColor,
                     bg: changeColor.withValues(alpha: 0.10),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
-              Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
+              Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.07)),
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _statItem('Invested', '₹${_formatInr(totalInvested, 0)}'),
+                  _statItem(
+                      'Invested', '₹${_formatInr(totalInvested, 0)}'),
                   _vertDivider(),
                   _statItem(
                     'Total P&L',
-                    '${isGain ? "+" : ""}₹${_formatInr(totalPL.abs(), 0)} (${totalPLPct.toStringAsFixed(1)}%)',
+                    '${isGain ? "+" : ""}₹${_formatInr(totalPL.abs(), 0)}'
+                        ' (${totalPLPct.toStringAsFixed(1)}%)',
                     valueColor: plColor,
                   ),
                   _vertDivider(),
@@ -403,8 +423,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+          color: bg, borderRadius: BorderRadius.circular(20)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -412,9 +432,13 @@ class _DashboardScreenState extends State<DashboardScreen>
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 4),
           ],
-          Text(label,
-              style: TextStyle(
-                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
@@ -426,27 +450,31 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+              style: const TextStyle(
+                  color: Color(0xFF64748B), fontSize: 11)),
           const SizedBox(height: 2),
-          Text(value,
-              style: TextStyle(
-                color: valueColor ?? const Color(0xFF94A3B8),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              )),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? const Color(0xFF94A3B8),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _vertDivider() => Container(
-        width: 1,
-        height: 28,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        color: Colors.white.withValues(alpha: 0.07),
-      );
+    width: 1,
+    height: 28,
+    margin: const EdgeInsets.symmetric(horizontal: 8),
+    color: Colors.white.withValues(alpha: 0.07),
+  );
 
-  // ── Chart Card ──
+  // ── Chart Card ─────────────────────────────────────────────────────────────
+
   Widget _buildChartCard(List<_ChartPoint> chartPoints) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -456,91 +484,109 @@ class _DashboardScreenState extends State<DashboardScreen>
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Portfolio Performance',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+              const Text(
+                'Portfolio Performance',
+                style: TextStyle(
+                  color: Color(0xFF94A3B8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF6366F1).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('ALL',
-                    style: TextStyle(
-                        color: Color(0xFF818CF8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'ALL TIME',
+                  style: TextStyle(
+                    color: Color(0xFF818CF8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          // Chart area — fixed height, full width
           SizedBox(
-            height: 110,
-            child: chartPoints.isEmpty
+            width: double.infinity,
+            height: 120,
+            child: chartPoints.length < 2
                 ? const Center(
-                    child: Text(
-                      'Add a stock to see chart',
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                    ),
-                  )
+              child: Text(
+                'Add a stock to see chart',
+                style: TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 12,
+                ),
+              ),
+            )
                 : _MiniLineChart(data: chartPoints),
           ),
         ],
       ),
     );
   }
+  // ── Quick Actions ──────────────────────────────────────────────────────────
 
-  // ── Quick Actions ──
   Widget _buildQuickActions() {
     final actions = [
       (
-        Icons.add_rounded,
-        'Add Stock',
-        const Color(0xFF6366F1),
-        const Color(0xFF6366F1),
-        AppRoutes.ADD_STOCK
+      Icons.add_rounded,
+      'Add Stock',
+      const Color(0xFF6366F1),
+      const Color(0xFF6366F1),
+      AppRoutes.ADD_STOCK,
       ),
       (
-        Icons.upload_file_rounded,
-        'Import CSV',
-        const Color(0xFF10B981),
-        const Color(0xFF10B981),
-        AppRoutes.IMPORT_CSV
+      Icons.upload_file_rounded,
+      'Import CSV',
+      const Color(0xFF10B981),
+      const Color(0xFF10B981),
+      AppRoutes.IMPORT_CSV,
       ),
       (
-        Icons.smart_toy_outlined,
-        'Ask AI',
-        const Color(0xFFF59E0B),
-        const Color(0xFFF59E0B),
-        AppRoutes.AI_CHAT
+      Icons.smart_toy_outlined,
+      'Ask AI',
+      const Color(0xFFF59E0B),
+      const Color(0xFFF59E0B),
+      AppRoutes.AI_CHAT,
       ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Quick Actions',
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+        const Text(
+          'Quick Actions',
+          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+        ),
         const SizedBox(height: 10),
         Row(
-          children: actions.map((a) {
+          children: actions.asMap().entries.map((entry) {
+            final i = entry.key;
+            final a = entry.value;
             return Expanded(
               child: GestureDetector(
                 onTap: () => Get.toNamed(a.$5),
                 child: Container(
                   margin: EdgeInsets.only(
-                    right: actions.indexOf(a) < actions.length - 1 ? 10 : 0,
-                  ),
+                      right: i < actions.length - 1 ? 10 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF111827),
                     borderRadius: BorderRadius.circular(18),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.06)),
                   ),
                   child: Column(
                     children: [
@@ -554,12 +600,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: Icon(a.$1, color: a.$4, size: 18),
                       ),
                       const SizedBox(height: 8),
-                      Text(a.$2,
-                          style: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          )),
+                      Text(
+                        a.$2,
+                        style: const TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -571,20 +619,23 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ── Holding Tile ──
+  // ── Holding Tile ───────────────────────────────────────────────────────────
+
   Widget _buildHoldingTile(Map<String, dynamic> h, int index) {
     final symbol = _asString(h['stock_symbol'] ?? h['symbol'], 'STK');
     final name = _asString(h['stock_name'] ?? h['name'], symbol);
     final platform = _asString(h['platform'], 'Manual');
     final buyPrice = _asDouble(h['buy_price']);
-    final currentPrice = _asDouble(h['current_price'] ?? h['buy_price']);
+    final currentPrice =
+    _asDouble(h['current_price'] ?? h['buy_price']);
     final qty = _asDouble(h['quantity']);
     final isGain = currentPrice >= buyPrice;
-    final plPct =
-        buyPrice == 0 ? 0.0 : ((currentPrice - buyPrice) / buyPrice * 100);
+    final plPct = buyPrice == 0
+        ? 0.0
+        : ((currentPrice - buyPrice) / buyPrice * 100);
     final currentValue = currentPrice * qty;
     final gainColor =
-        isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    isGain ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return AnimatedBuilder(
       animation: _listController,
@@ -610,7 +661,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           decoration: BoxDecoration(
             color: const Color(0xFF111827),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Row(
             children: [
@@ -624,7 +676,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 child: Center(
                   child: Text(
-                    symbol.length >= 3 ? symbol.substring(0, 3) : symbol,
+                    symbol.length >= 3
+                        ? symbol.substring(0, 3)
+                        : symbol,
                     style: TextStyle(
                       color: gainColor,
                       fontSize: 10,
@@ -657,7 +711,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
+                            color:
+                            Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -673,7 +728,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${qty.toStringAsFixed(qty.truncateToDouble() == qty ? 0 : 2)} shares · $name',
+                      '${qty.toStringAsFixed(qty.truncateToDouble() == qty ? 0 : 2)}'
+                          ' shares · $name',
                       style: const TextStyle(
                           color: Color(0xFF64748B), fontSize: 11),
                       overflow: TextOverflow.ellipsis,
@@ -724,7 +780,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ── Helpers ──
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
   String _formatInr(double v, int decimals) {
     final s = v.toStringAsFixed(decimals);
     final parts = s.split('.');
@@ -752,109 +809,195 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 }
 
-// ── Mini Line Chart ──
-class _MiniLineChart extends StatelessWidget {
+// ── Mini Line Chart ────────────────────────────────────────────────────────────
+// ── Mini Line Chart ────────────────────────────────────────────────────────────
+
+class _MiniLineChart extends StatefulWidget {
   final List<_ChartPoint> data;
   const _MiniLineChart({required this.data});
 
   @override
+  State<_MiniLineChart> createState() => _MiniLineChartState();
+}
+
+class _MiniLineChartState extends State<_MiniLineChart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _progress = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeInOut,
+    );
+    _animController.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MiniLineChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data) {
+      _animController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: _MiniLineChartPainter(data: data),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height =
+        constraints.maxHeight.isFinite ? constraints.maxHeight : 110.0;
+
+        return AnimatedBuilder(
+          animation: _progress,
+          builder: (_, __) {
+            return CustomPaint(
+              size: Size(width, height),
+              painter: _MiniLineChartPainter(
+                data: widget.data,
+                progress: _progress.value,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class _MiniLineChartPainter extends CustomPainter {
   final List<_ChartPoint> data;
-  _MiniLineChartPainter({required this.data});
+  final double progress;
+
+  const _MiniLineChartPainter({
+    required this.data,
+    required this.progress,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.length < 2) return;
+    // Guard: never paint on zero-size canvas or fewer than 2 points
+    if (data.length < 2 || size.width <= 0 || size.height <= 0) return;
 
     const labelHeight = 16.0;
     final chartHeight = size.height - labelHeight;
+    if (chartHeight <= 0) return;
 
-    final minV = data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
-    final maxV = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final minV =
+    data.map((e) => e.value).reduce((a, b) => a < b ? a : b);
+    final maxV =
+    data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final rawRange = maxV - minV;
     final range = rawRange < 1.0 ? 1.0 : rawRange;
     final padV = range * 0.15;
+    final totalRange = range + padV * 2;
 
-    // Compute points
-    List<Offset> points = [];
+    // Build all pixel points
+    final allPoints = <Offset>[];
     for (int i = 0; i < data.length; i++) {
-      final x = i / (data.length - 1) * size.width;
+      final x = data.length == 1
+          ? size.width / 2
+          : i / (data.length - 1) * size.width;
       final y = chartHeight -
-          ((data[i].value - minV + padV) / (range + padV * 2)) * chartHeight;
-      points.add(Offset(x, y));
+          ((data[i].value - minV + padV) / totalRange) * chartHeight;
+      allPoints.add(Offset(x, y));
     }
 
-    // Gradient fill
-    final fillPath = Path()..moveTo(points.first.dx, chartHeight);
-    for (final p in points) {
+    // Slice visible points according to animation progress
+    final stopIndex = progress * (allPoints.length - 1);
+    final fullIndex = stopIndex.floor().clamp(0, allPoints.length - 1);
+    final visible = List<Offset>.from(allPoints.sublist(0, fullIndex + 1));
+
+    if (fullIndex < allPoints.length - 1) {
+      final fraction = stopIndex - fullIndex;
+      final s = allPoints[fullIndex];
+      final e = allPoints[fullIndex + 1];
+      visible.add(Offset(
+        s.dx + (e.dx - s.dx) * fraction,
+        s.dy + (e.dy - s.dy) * fraction,
+      ));
+    }
+
+    if (visible.length < 2) return;
+
+    // Gradient fill under the line
+    final fillPath = Path()..moveTo(visible.first.dx, chartHeight);
+    for (final p in visible) {
       fillPath.lineTo(p.dx, p.dy);
     }
     fillPath
-      ..lineTo(points.last.dx, chartHeight)
+      ..lineTo(visible.last.dx, chartHeight)
       ..close();
 
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF6366F1).withValues(alpha: 0.3),
-          const Color(0xFF6366F1).withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, chartHeight));
-    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF6366F1).withValues(alpha: 0.30),
+            const Color(0xFF6366F1).withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, chartHeight)),
+    );
 
     // Line
-    final linePaint = Paint()
-      ..color = const Color(0xFF6366F1)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      linePath.lineTo(points[i].dx, points[i].dy);
+    final linePath = Path()
+      ..moveTo(visible.first.dx, visible.first.dy);
+    for (int i = 1; i < visible.length; i++) {
+      linePath.lineTo(visible[i].dx, visible[i].dy);
     }
-    canvas.drawPath(linePath, linePaint);
-
-    // Dot at last point
-    canvas.drawCircle(
-      points.last,
-      4,
-      Paint()..color = const Color(0xFF6366F1),
-    );
-    canvas.drawCircle(
-      points.last,
-      2,
-      Paint()..color = Colors.white,
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = const Color(0xFF6366F1)
+        ..strokeWidth = 2.3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
     );
 
-    // X-axis labels — skip 'Start', show every other label if crowded
-    const textStyle = TextStyle(
-      color: Color(0xFF475569),
-      fontSize: 9,
-    );
+    // Animated end dot
+    final last = visible.last;
+    canvas.drawCircle(last, 5, Paint()..color = const Color(0xFF6366F1));
+    canvas.drawCircle(last, 3, Paint()..color = Colors.white);
+
+    // X-axis labels — skip index 0 ('Start')
+    const textStyle = TextStyle(color: Color(0xFF475569), fontSize: 9);
     final step = data.length > 6 ? 2 : 1;
+
     for (int i = 1; i < data.length; i += step) {
       final tp = TextPainter(
         text: TextSpan(text: data[i].date, style: textStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      final x = (i / (data.length - 1) * size.width) - tp.width / 2;
-      tp.paint(
-          canvas, Offset(x.clamp(0, size.width - tp.width), chartHeight + 4));
+
+      final rawX = data.length == 1
+          ? size.width / 2
+          : i / (data.length - 1) * size.width - tp.width / 2;
+
+      final labelX = rawX.clamp(
+          0.0, (size.width - tp.width).clamp(0.0, size.width));
+
+      tp.paint(canvas, Offset(labelX, chartHeight + 4));
     }
   }
 
   @override
-  bool shouldRepaint(covariant _MiniLineChartPainter old) => old.data != data;
+  bool shouldRepaint(covariant _MiniLineChartPainter old) =>
+      old.data != data || old.progress != progress;
 }
