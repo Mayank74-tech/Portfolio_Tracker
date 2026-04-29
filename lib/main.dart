@@ -7,6 +7,11 @@ import 'package:smart_portfolio_tracker/config/hive_config.dart';
 import 'package:smart_portfolio_tracker/data/services/local/hive_service.dart';
 import 'package:smart_portfolio_tracker/firebase_options.dart';
 
+
+/// Run Bank server
+// cd mock_bank_api
+// dart run bin/server.dart
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
