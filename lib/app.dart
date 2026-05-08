@@ -12,32 +12,40 @@ class SmartPortfolioApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      // ─── APP INFO ──────────────────────────────────────
+      // ─── APP INFO ────────────────────────────────────────
       title: 'Smart Portfolio Tracker',
       debugShowCheckedModeBanner: false,
 
-      // ─── THEME ─────────────────────────────────────────
+      // ─── THEME ───────────────────────────────────────────
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark,
 
-      // ─── INITIAL BINDING (runs before app loads) ───────
+      // ─── INITIAL BINDING ─────────────────────────────────
       initialBinding: InitialBinding(),
 
-      // ─── NAVIGATION STARTS FROM SPLASH ─────────────────
+      // ─── NAVIGATION ──────────────────────────────────────
       initialRoute: AppRoutes.SPLASH,
-
-      // ─── ALL ROUTES REGISTERED ─────────────────────────
       getPages: AppPages.pages,
 
-      // ─── DEFAULT TRANSITION ────────────────────────────
+      // ─── FASTER TRANSITION ───────────────────────────────
       defaultTransition: Transition.fadeIn,
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: const Duration(milliseconds: 200), // 300→200ms
 
-      // ─── GLOBAL GLASS BACKGROUND ───────────────────────
+      // ─── GLOBAL BUILDER ──────────────────────────────────
       builder: (context, child) {
-        return AppBackground(
-          child: child ?? const SizedBox(),
+        // ✅ Lock text scale - stops layout recalc when
+        // system font size changes
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.noScaling,
+          ),
+          // ✅ AppBackground only repaints when child changes
+          // NOT on every MediaQuery/theme update
+          child: AppBackground(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

@@ -75,53 +75,77 @@ class PortfolioRepository {
     String? userId,
   }) async {
     final holdings = await getHoldings(userId: userId);
-    final enriched = <Map<String, dynamic>>[];
 
-    for (final holding in holdings) {
+    if (holdings.isEmpty) return holdings;
+
+    // ✅ Deduplicate symbols
+    final symbols = holdings
+        .map(_symbolFromHolding)
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+
+    // ✅ Fetch ALL quotes in parallel
+    final quoteResults = await Future.wait(
+      symbols.map((symbol) async {
+        try {
+          final quote = await _stocks.getQuote(symbol);
+          return MapEntry(symbol, quote);
+        } catch (_) {
+          return MapEntry(symbol, <String, dynamic>{});
+        }
+      }),
+    );
+
+    // ✅ Build lookup map
+    final quoteMap = {
+      for (final entry in quoteResults) entry.key: entry.value
+    };
+
+    // ✅ Enrich holdings (no await inside loop anymore)
+    return holdings.map((holding) {
       final symbol = _symbolFromHolding(holding);
-      if (symbol.isEmpty) {
-        enriched.add(holding);
-        continue;
+      final quote = quoteMap[symbol];
+
+      if (symbol.isEmpty || quote == null || quote.isEmpty) {
+        return holding;
       }
 
-      try {
-        final quote = await _stocks.getQuote(symbol);
-        final currentPrice = _number(quote['c']);
-        enriched.add({
-          ...holding,
-          'quote': quote,
-          'current_price': currentPrice,
-          'current_value': currentPrice * _number(holding['quantity']),
-          'today_change': _number(quote['d']) * _number(holding['quantity']),
-          'today_change_percent': _number(quote['dp']),
-        });
-      } catch (_) {
-        enriched.add(holding);
-      }
-    }
+      final quantity = _number(holding['quantity']);
+      final currentPrice = _number(quote['c']);
+      final todayChange = _number(quote['d']);
 
-    return enriched;
+      return {
+        ...holding,
+        'quote': quote,
+        'current_price': currentPrice,
+        'current_value': currentPrice * quantity,
+        'today_change': todayChange * quantity,
+        'today_change_percent': _number(quote['dp']),
+      };
+    }).toList();
   }
 
-  Future<Map<String, dynamic>> getPortfolioSummary({String? userId}) async {
+  Future<Map<String, dynamic>> getPortfolioSummary({
+    String? userId,
+  }) async {
     final holdings = await getHoldingsWithPrices(userId: userId);
 
-    var totalValue = 0.0;
-    var totalInvestment = 0.0;
-    var todayChange = 0.0;
+    double totalValue = 0.0;
+    double totalInvestment = 0.0;
+    double todayChange = 0.0;
 
-    for (final holding in holdings) {
-      final quantity = _number(holding['quantity']);
-      final buyPrice = _number(holding['buy_price']);
-      final currentPrice = _number(holding['current_price']);
+    for (final h in holdings) {
+      final quantity = _number(h['quantity']);
+      final buyPrice = _number(h['buy_price']);
+      final currentPrice = _number(h['current_price']);
+
       totalInvestment += buyPrice * quantity;
       totalValue += currentPrice * quantity;
-      todayChange += _number(holding['today_change']);
+      todayChange += _number(h['today_change']);
     }
 
     final profitLoss = totalValue - totalInvestment;
-    final profitLossPercent =
-        totalInvestment == 0 ? 0.0 : (profitLoss / totalInvestment) * 100;
 
     return {
       'holdings': holdings,
@@ -129,7 +153,8 @@ class PortfolioRepository {
       'total_value': totalValue,
       'total_investment': totalInvestment,
       'profit_loss': profitLoss,
-      'profit_loss_percent': profitLossPercent,
+      'profit_loss_percent':
+      totalInvestment == 0 ? 0.0 : (profitLoss / totalInvestment) * 100,
       'today_change': todayChange,
     };
   }

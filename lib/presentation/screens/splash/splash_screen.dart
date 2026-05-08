@@ -13,7 +13,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  // --- Controllers ---
   late final AnimationController _logoController;
   late final AnimationController _textController;
   late final AnimationController _loadingController;
@@ -21,26 +20,30 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _particleController;
   late final AnimationController _glowController;
 
-  // --- Logo animations ---
   late final Animation<double> _logoScale;
   late final Animation<double> _logoOpacity;
   late final Animation<Offset> _logoSlide;
-
-  // --- Text animations ---
   late final Animation<double> _titleOpacity;
   late final Animation<Offset> _titleSlide;
   late final Animation<double> _subtitleOpacity;
-
-  // --- Loading bar ---
   late final Animation<double> _loadingProgress;
   late final Animation<double> _loadingOpacity;
-
-  // --- Glow pulse ---
   late final Animation<double> _glowRadius;
+
+  // ✅ Auth check runs in parallel with animations, not after
+  late final Future<User?> _authFuture;
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ Start auth check immediately - parallel with animations
+    // Before: checked auth AFTER 2800ms delay
+    // Now: auth result ready before animations finish
+    _authFuture = Future.microtask(
+          () => FirebaseAuth.instance.currentUser,
+    );
+
     _initControllers();
     _initAnimations();
     _startSequence();
@@ -49,24 +52,26 @@ class _SplashScreenState extends State<SplashScreen>
   void _initControllers() {
     _logoController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600), // ✅ 800→600ms
     );
     _textController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 500), // ✅ 700→500ms
     );
     _loadingController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1400), // ✅ 1800→1400ms
     );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+
     _particleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
+
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -74,7 +79,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _initAnimations() {
-    // Logo
     _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
     );
@@ -91,7 +95,6 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _logoController, curve: Curves.easeOutCubic),
     );
 
-    // Text
     _titleOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _textController, curve: Curves.easeIn),
     );
@@ -108,7 +111,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Loading bar
     _loadingProgress = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _loadingController, curve: Curves.easeInOut),
     );
@@ -119,36 +121,38 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Glow
     _glowRadius = Tween<double>(begin: 40, end: 70).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
   }
 
   Future<void> _startSequence() async {
-    // Logo entrance
-    await Future.delayed(const Duration(milliseconds: 200));
+    // ✅ Reduced delays: 200+500+400 = 1100ms → 150+350+300 = 800ms
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
     _logoController.forward();
 
-    // Text entrance
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
     _textController.forward();
 
-    // Loading bar
-    await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     _loadingController.forward();
 
-    // Navigate after splash
-    await Future.delayed(const Duration(milliseconds: 2800));
+    // ✅ Wait for loading bar + auth result simultaneously
+    // Total splash: ~1800ms vs original 2800ms
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1400)),
+      _authFuture, // ✅ already running since initState
+    ]);
+
     if (!mounted) return;
 
-    // ── Check Firebase auth state ──
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await _authFuture;
     if (user != null) {
-      // Already logged in → skip login & onboarding
       Get.offAllNamed(AppRoutes.DASHBOARD);
     } else {
-      // First time or logged out → show onboarding
       Get.offNamed(AppRoutes.ONBOARDING);
     }
   }
@@ -166,18 +170,24 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    // ✅ Read size once
+    final size = MediaQuery.sizeOf(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1120),
       body: Stack(
         children: [
-          // ── Ambient background glows ──
-          _buildBackgroundGlow(size),
+          // ✅ Static glows in own RepaintBoundary
+          RepaintBoundary(
+            child: _buildBackgroundGlow(size),
+          ),
 
-          // ── Floating particles ──
-          ..._buildParticles(size),
+          // ✅ Particles in own RepaintBoundary
+          RepaintBoundary(
+            child: Stack(children: _buildParticles(size)),
+          ),
 
-          // ── Main content ──
+          // ✅ Main content
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -189,15 +199,14 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // ── Loading bar at bottom ──
+          // ✅ Loading bar
           Positioned(
             bottom: 72,
             left: 0,
             right: 0,
-            child: _buildLoadingSection(),
+            child: RepaintBoundary(child: _buildLoadingSection()),
           ),
 
-          // ── Version tag ──
           const Positioned(
             bottom: 20,
             left: 0,
@@ -218,43 +227,39 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  // ── Background ambient glows ──
   Widget _buildBackgroundGlow(Size size) {
     return Stack(
       children: [
-        // Top center purple glow
         Positioned(
           top: size.height * 0.05,
           left: size.width * 0.5 - 150,
-          child: AnimatedBuilder(
-            animation: _glowRadius,
-            builder: (_, __) => Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF6366F1).withValues(alpha: 0.14),
-                    Colors.transparent,
-                  ],
-                ),
+          // ✅ Glow animation is decorative - removed AnimatedBuilder
+          // Static glow looks identical, saves repeated rebuilds
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Color(0x236366F1),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),
         ),
-        // Bottom right green glow
         Positioned(
           bottom: size.height * 0.1,
           right: -60,
           child: Container(
             width: 220,
             height: 220,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF10B981).withValues(alpha: 0.09),
+                  Color(0x1710B981),
                   Colors.transparent,
                 ],
               ),
@@ -265,9 +270,9 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  // ── Floating particles ──
   List<Widget> _buildParticles(Size size) {
-    final positions = [
+    // ✅ const positions
+    const positions = [
       [0.15, 0.20],
       [0.28, 0.45],
       [0.41, 0.28],
@@ -275,8 +280,9 @@ class _SplashScreenState extends State<SplashScreen>
       [0.67, 0.22],
       [0.80, 0.42],
     ];
+
     return List.generate(6, (i) {
-      final double particleSize = 4.0 + i * 2;
+      final particleSize = 4.0 + i * 2;
       final opacity = 0.20 + i * 0.05;
       return Positioned(
         left: size.width * positions[i][0],
@@ -285,32 +291,32 @@ class _SplashScreenState extends State<SplashScreen>
           animation: _particleController,
           builder: (_, __) {
             final offset = math.sin(
-                  (_particleController.value * math.pi * 2) + i * 0.8,
-                ) *
+              _particleController.value * math.pi * 2 + i * 0.8,
+            ) *
                 10;
             return Transform.translate(
               offset: Offset(0, offset),
               child: Opacity(
-                opacity: 0.3 +
+                opacity: (0.3 +
                     (math.sin(
-                                  (_particleController.value * math.pi * 2) + i,
-                                ) *
-                                0.5 +
-                            0.5) *
-                        opacity,
+                      _particleController.value *
+                          math.pi *
+                          2 +
+                          i,
+                    ) *
+                        0.5 +
+                        0.5) *
+                        opacity)
+                    .clamp(0.0, 1.0),
                 child: Container(
                   width: particleSize,
                   height: particleSize,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF6366F1),
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.5),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
+                    // ✅ Removed boxShadow from animated widget
+                    // boxShadow recalculates every frame = expensive
+                    // Visual difference is negligible at 4-12px size
                   ),
                 ),
               ),
@@ -321,164 +327,147 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  // ── Logo icon ──
   Widget _buildLogo() {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_logoController, _glowController]),
-      builder: (_, __) {
-        return FadeTransition(
-          opacity: _logoOpacity,
-          child: SlideTransition(
-            position: _logoSlide,
-            child: ScaleTransition(
-              scale: _logoScale,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outer glow ring
-                  AnimatedBuilder(
-                    animation: _glowController,
-                    builder: (_, __) => Container(
-                      width: 108 + (_glowRadius.value - 40),
-                      height: 108 + (_glowRadius.value - 40),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFF6366F1).withValues(alpha: 0.15),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Main icon box
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF6366F1),
-                          Color(0xFF4F46E5),
-                          Color(0xFF7C3AED),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFF6366F1).withValues(alpha: 0.45),
-                          blurRadius: _glowRadius.value,
-                          spreadRadius: 2,
-                        ),
-                        BoxShadow(
-                          color:
-                              const Color(0xFF6366F1).withValues(alpha: 0.15),
-                          blurRadius: _glowRadius.value * 1.8,
-                          spreadRadius: 0,
-                        ),
+    return FadeTransition(
+      opacity: _logoOpacity,
+      child: SlideTransition(
+        position: _logoSlide,
+        child: ScaleTransition(
+          scale: _logoScale,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // ✅ Glow ring uses glowController directly
+              AnimatedBuilder(
+                animation: _glowController,
+                builder: (_, __) => Container(
+                  width: 68 + _glowRadius.value,
+                  height: 68 + _glowRadius.value,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Color(0x266366F1),
+                        Colors.transparent,
                       ],
                     ),
-                    child: const Center(
-                      child: _TrendingUpIcon(),
-                    ),
                   ),
-                  // Green sparkle dot
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: AnimatedBuilder(
-                      animation: _pulseController,
-                      builder: (_, __) => Transform.scale(
-                        scale: 1.0 + _pulseController.value * 0.35,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF0B1120),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF10B981)
-                                    .withValues(alpha: 0.7),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
+                ),
+              ),
+              // Main icon - static, no animation needed
+              AnimatedBuilder(
+                animation: _glowController,
+                builder: (_, child) => Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF6366F1),
+                        Color(0xFF4F46E5),
+                        Color(0xFF7C3AED),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6366F1)
+                            .withValues(alpha: 0.45),
+                        blurRadius: _glowRadius.value,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: child,
+                ),
+                child: const Center(child: _TrendingUpIcon()),
+              ),
+              // Green sparkle dot
+              Positioned(
+                top: 10,
+                right: 10,
+                child: AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (_, __) => Transform.scale(
+                    scale: 1.0 + _pulseController.value * 0.35,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF0B1120),
+                          width: 2,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981)
+                                .withValues(alpha: 0.7),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppName() {
+    return Column(
+      children: [
+        FadeTransition(
+          opacity: _titleOpacity,
+          child: SlideTransition(
+            position: _titleSlide,
+            child: ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFF1F5F9),
+                  Color(0xFFC7D2FE),
+                  Color(0xFFA5B4FC),
                 ],
+              ).createShader(bounds),
+              blendMode: BlendMode.srcIn,
+              child: const Text(
+                'InvestIQ',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 6),
+        FadeTransition(
+          opacity: _subtitleOpacity,
+          child: const Text(
+            'Track smarter. Invest wiser.',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF94A3B8),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  // ── App name + tagline ──
-  Widget _buildAppName() {
-    return AnimatedBuilder(
-      animation: _textController,
-      builder: (_, __) {
-        return Column(
-          children: [
-            FadeTransition(
-              opacity: _titleOpacity,
-              child: SlideTransition(
-                position: _titleSlide,
-                child: ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFF1F5F9),
-                      Color(0xFFC7D2FE),
-                      Color(0xFFA5B4FC),
-                    ],
-                  ).createShader(bounds),
-                  blendMode: BlendMode.srcIn,
-                  child: const Text(
-                    'InvestIQ',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            FadeTransition(
-              opacity: _subtitleOpacity,
-              child: const Text(
-                'Track smarter. Invest wiser.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF94A3B8),
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // ── Loading bar section ──
   Widget _buildLoadingSection() {
     return AnimatedBuilder(
       animation: _loadingController,
@@ -495,15 +484,11 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 3,
                     child: Stack(
                       children: [
-                        // Track
-                        Container(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                        // Fill
+                        Container(color: Colors.white.withValues(alpha: 0.08)),
                         FractionallySizedBox(
                           widthFactor: _loadingProgress.value,
-                          child: Container(
-                            decoration: const BoxDecoration(
+                          child: const DecoratedBox(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
                                   Color(0xFF6366F1),
@@ -520,7 +505,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(height: 12),
-              _PulsingText(controller: _loadingController),
+              const _PulsingText(),
             ],
           ),
         );
@@ -529,7 +514,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// ── Custom TrendingUp icon drawn with canvas ──
 class _TrendingUpIcon extends StatelessWidget {
   const _TrendingUpIcon();
 
@@ -543,41 +527,37 @@ class _TrendingUpIcon extends StatelessWidget {
 }
 
 class _TrendingUpPainter extends CustomPainter {
+  // ✅ Cached paint - created once
+  static final _paint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
     final path = Path();
-    // Trending line: bottom-left to top-right
     path.moveTo(size.width * 0.08, size.height * 0.72);
     path.lineTo(size.width * 0.35, size.height * 0.45);
     path.lineTo(size.width * 0.55, size.height * 0.58);
     path.lineTo(size.width * 0.88, size.height * 0.25);
+    canvas.drawPath(path, _paint);
 
-    canvas.drawPath(path, paint);
-
-    // Arrow head
     final arrowPath = Path();
     arrowPath.moveTo(size.width * 0.65, size.height * 0.25);
     arrowPath.lineTo(size.width * 0.88, size.height * 0.25);
     arrowPath.lineTo(size.width * 0.88, size.height * 0.48);
-
-    canvas.drawPath(arrowPath, paint);
+    canvas.drawPath(arrowPath, _paint);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// ── Pulsing "Loading your portfolio..." text ──
+// ✅ Removed controller prop - manages own animation
 class _PulsingText extends StatefulWidget {
-  final AnimationController controller;
-  const _PulsingText({required this.controller});
+  const _PulsingText();
 
   @override
   State<_PulsingText> createState() => _PulsingTextState();

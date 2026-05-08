@@ -77,14 +77,24 @@ class BehavioralRepository {
 
   Map<String, dynamic> getAttentionAnalysis(
       List<Map<String, dynamic>> holdings) {
+
     final attentionMap = _tracker.getAttentionMap();
+
     int totalAttention = 0;
-    for (final int v in attentionMap.values) {
-      totalAttention = totalAttention + v;
+    for (final v in attentionMap.values) {
+      totalAttention += v;
     }
 
     if (totalAttention == 0) {
       return {'error': 'No attention data yet. Browse your stocks first.'};
+    }
+
+    // ✅ Compute total portfolio ONCE (was inside loop before)
+    double totalPortfolio = 0.0;
+    for (final h in holdings) {
+      totalPortfolio +=
+          _toDouble(h['current_price'] ?? h['buy_price']) *
+              _toDouble(h['quantity']);
     }
 
     final results = <Map<String, dynamic>>[];
@@ -92,47 +102,41 @@ class BehavioralRepository {
     for (final h in holdings) {
       final symbol =
       (h['stock_symbol'] ?? h['symbol']).toString();
+
       final buy = _toDouble(h['buy_price']);
       final qty = _toDouble(h['quantity']);
       final cur = _toDouble(h['current_price'] ?? buy);
 
       final realValue = cur * qty;
       final attentionSeconds = attentionMap[symbol] ?? 0;
-      final attentionPct = totalAttention == 0
-          ? 0.0
-          : (attentionSeconds / totalAttention) * 100;
 
-      // Real allocation as % of total portfolio
-      final totalPortfolio = holdings.fold(
-        0.0,
-            (sum, h2) =>
-        sum +
-            _toDouble(h2['current_price'] ?? h2['buy_price']) *
-                _toDouble(h2['quantity']),
-      );
+      final attentionPct =
+          (attentionSeconds / totalAttention) * 100;
+
       final realAllocationPct =
-      totalPortfolio == 0 ? 0.0 : (realValue / totalPortfolio) * 100;
+      totalPortfolio == 0
+          ? 0.0
+          : (realValue / totalPortfolio) * 100;
 
       results.add({
         'symbol': symbol,
         'real_allocation_pct': realAllocationPct,
         'attention_pct': attentionPct,
         'attention_seconds': attentionSeconds,
-        'days_since_viewed': _tracker.daysSinceLastView(symbol),
+        'days_since_viewed':
+        _tracker.daysSinceLastView(symbol),
         'gap': attentionPct - realAllocationPct,
-        // positive = overattended, negative = underattended
       });
     }
 
-    results.sort((a, b) =>
-        (_toDouble(b['gap'])).compareTo(_toDouble(a['gap'])));
+    results.sort(
+            (a, b) => _toDouble(b['gap']).compareTo(_toDouble(a['gap'])));
 
-    final mostOverattended = results.isNotEmpty
-        ? results.first['symbol'].toString()
-        : null;
-    final mostIgnored = results.isNotEmpty
-        ? results.last['symbol'].toString()
-        : null;
+    final mostOverattended =
+    results.isNotEmpty ? results.first['symbol'] : null;
+
+    final mostIgnored =
+    results.isNotEmpty ? results.last['symbol'] : null;
 
     return {
       'items': results,
@@ -147,47 +151,43 @@ class BehavioralRepository {
           : 'Keep browsing to build attention data.',
     };
   }
-
   // ── Feature 4: Uncertainty Visualizer ─────────────────────────────────────
 
   Map<String, dynamic> getUncertaintyBands(
       List<Map<String, dynamic>> holdings) {
-    double totalValue = 0;
-    double weightedVolatility = 0;
+
+    double totalValue = 0.0;
+    double weightedVolatility = 0.0;
 
     for (final h in holdings) {
       final buy = _toDouble(h['buy_price']);
       final cur = _toDouble(h['current_price'] ?? buy);
       final qty = _toDouble(h['quantity']);
+
       final value = cur * qty;
       totalValue += value;
 
-      // Estimate volatility from P&L % as proxy
-      final plPct =
-      buy == 0 ? 0.0 : ((cur - buy) / buy).abs() * 100;
-      weightedVolatility +=
-          value * (plPct.clamp(2.0, 40.0) / 100);
+      if (buy != 0) {
+        final plPct = ((cur - buy) / buy).abs() * 100;
+        final vol = (plPct < 2.0 ? 2.0 : plPct > 40.0 ? 40.0 : plPct) / 100;
+        weightedVolatility += value * vol;
+      }
     }
 
     if (totalValue == 0) return {'error': 'No portfolio data'};
 
     final avgVol = weightedVolatility / totalValue;
 
-    // 1-month scenario bands
-    final optimistic = totalValue * (1 + avgVol * 1.5);
-    final likely_high = totalValue * (1 + avgVol * 0.8);
-    final likely_low = totalValue * (1 - avgVol * 0.8);
-    final pessimistic = totalValue * (1 - avgVol * 1.5);
-
     return {
       'current': totalValue,
-      'optimistic': optimistic,
-      'likely_high': likely_high,
-      'likely_low': likely_low,
-      'pessimistic': pessimistic,
+      'optimistic': totalValue * (1 + avgVol * 1.5),
+      'likely_high': totalValue * (1 + avgVol * 0.8),
+      'likely_low': totalValue * (1 - avgVol * 0.8),
+      'pessimistic': totalValue * (1 - avgVol * 1.5),
       'volatility_pct': avgVol * 100,
       'confidence_interval':
-      '₹${_fmt(likely_low)} – ₹${_fmt(likely_high)}',
+      '₹${_fmt(totalValue * (1 - avgVol * 0.8))} – '
+          '₹${_fmt(totalValue * (1 + avgVol * 0.8))}',
     };
   }
 
@@ -230,79 +230,80 @@ class BehavioralRepository {
 
   List<Map<String, dynamic>> getSilentWinners(
       List<Map<String, dynamic>> holdings) {
+
     final results = <Map<String, dynamic>>[];
 
     for (final h in holdings) {
       final symbol =
       (h['stock_symbol'] ?? h['symbol']).toString();
-      final buy = _toDouble(h['buy_price']);
-      final cur =
-      _toDouble(h['current_price'] ?? buy);
-      final plPct =
-      buy == 0 ? 0.0 : ((cur - buy) / buy) * 100;
-      final daysSince = _tracker.daysSinceLastView(symbol);
 
-      // A "silent winner" = positive return + not viewed recently
-      if (plPct > 5 && daysSince > 7) {
-        results.add({
-          'symbol': symbol,
-          'pl_percent': plPct,
-          'days_since_viewed': daysSince,
-          'insight':
-          'You haven\'t checked $symbol in $daysSince days, '
-              'but it\'s up ${plPct.toStringAsFixed(1)}%.',
-        });
-      }
+      final buy = _toDouble(h['buy_price']);
+      if (buy == 0) continue;
+
+      final cur = _toDouble(h['current_price'] ?? buy);
+      final plPct = ((cur - buy) / buy) * 100;
+
+      if (plPct <= 5) continue;
+
+      final daysSince = _tracker.daysSinceLastView(symbol);
+      if (daysSince <= 7) continue;
+
+      results.add({
+        'symbol': symbol,
+        'pl_percent': plPct,
+        'days_since_viewed': daysSince,
+        'insight':
+        'You haven\'t checked $symbol in $daysSince days, '
+            'but it\'s up ${plPct.toStringAsFixed(1)}%.',
+      });
     }
 
-    results.sort((a, b) =>
-        (_toDouble(b['pl_percent']))
+    results.sort(
+            (a, b) => _toDouble(b['pl_percent'])
             .compareTo(_toDouble(a['pl_percent'])));
+
     return results;
   }
-
   // ── Feature 9: Cascading Failure ──────────────────────────────────────────
 
   Map<String, dynamic> getCascadingRisk(
       List<Map<String, dynamic>> holdings) {
-    // Group by sector/finnhubIndustry
+
     final sectorMap = <String, double>{};
-    double totalValue = 0;
+    double totalValue = 0.0;
 
     for (final h in holdings) {
-      final sector = (h['sector'] ??
-          h['finnhubIndustry'] ??
-          'Unknown')
+      final sector =
+      (h['sector'] ?? h['finnhubIndustry'] ?? 'Unknown')
           .toString();
-      final cur =
-      _toDouble(h['current_price'] ?? h['buy_price']);
-      final qty = _toDouble(h['quantity']);
-      final value = cur * qty;
-      sectorMap[sector] = (sectorMap[sector] ?? 0) + value;
+
+      final value =
+          _toDouble(h['current_price'] ?? h['buy_price']) *
+              _toDouble(h['quantity']);
+
+      sectorMap[sector] =
+          (sectorMap[sector] ?? 0.0) + value;
+
       totalValue += value;
     }
 
     if (totalValue == 0) return {'error': 'No data'};
 
-    final sectorPcts = sectorMap.map(
-          (s, v) => MapEntry(s, (v / totalValue) * 100),
-    );
+    String? topSector;
+    double topValue = 0;
 
-    // Find dominant sector
-    final sorted = sectorPcts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    sectorMap.forEach((sector, value) {
+      if (value > topValue) {
+        topValue = value;
+        topSector = sector;
+      }
+    });
 
-    final topSector =
-    sorted.isNotEmpty ? sorted.first.key : 'Unknown';
-    final topPct =
-    sorted.isNotEmpty ? sorted.first.value : 0.0;
+    final topPct = (topValue / totalValue) * 100;
 
-    // Stocks in top sector
     final affected = holdings
         .where((h) =>
-    (h['sector'] ??
-        h['finnhubIndustry'] ??
-        'Unknown')
+    (h['sector'] ?? h['finnhubIndustry'] ?? 'Unknown')
         .toString() ==
         topSector)
         .map((h) =>
@@ -310,7 +311,8 @@ class BehavioralRepository {
         .toList();
 
     return {
-      'sector_breakdown': sectorPcts,
+      'sector_breakdown': sectorMap.map(
+              (k, v) => MapEntry(k, (v / totalValue) * 100)),
       'top_sector': topSector,
       'top_sector_pct': topPct,
       'affected_symbols': affected,
@@ -321,7 +323,6 @@ class BehavioralRepository {
       'is_concentrated': topPct > 40,
     };
   }
-
   // ── Feature 10: Identity Drift ─────────────────────────────────────────────
 
   Map<String, dynamic> getIdentityDrift(

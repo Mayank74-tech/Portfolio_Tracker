@@ -32,131 +32,189 @@ import '../screens/success/success_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
+  AppPages._(); // ✅ Prevent instantiation
+
   static final pages = [
-    // ─── SPLASH ──────────────────────────────────
+
+    // ─── SPLASH ──────────────────────────────────────────
     GetPage(
       name: AppRoutes.SPLASH,
       page: () => const SplashScreen(),
+      // ✅ No animation for splash - saves first-frame time
+      transition: Transition.noTransition,
     ),
 
-    // ─── ONBOARDING ──────────────────────────────
+    // ─── ONBOARDING ──────────────────────────────────────
     GetPage(
       name: AppRoutes.ONBOARDING,
       page: () => const OnboardingScreen(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── AUTH ────────────────────────────────────
+    // ─── AUTH ─────────────────────────────────────────────
     GetPage(
       name: AppRoutes.LOGIN,
       page: () => const LoginScreen(),
       binding: AuthBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: AppRoutes.SIGNUP,
       page: () => const SignupScreen(),
       binding: AuthBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── DASHBOARD (with bottom nav) ─────────────
+    // ─── DASHBOARD ────────────────────────────────────────
     GetPage(
       name: AppRoutes.DASHBOARD,
       page: () => const MainNavigationScreen(child: DashboardScreen()),
       binding: DashboardBinding(),
       transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
+      // ✅ Fixes: [GETX] REMOVING ROUTE /dashboard (appeared twice in logs)
+      preventDuplicates: true,
     ),
 
-    // ─── STOCK DETAIL (no bottom nav) ────────────
+    // ─── STOCK DETAIL ─────────────────────────────────────
     GetPage(
       name: AppRoutes.STOCK_DETAIL,
       page: () => const StockDetailScreen(),
       binding: StockDetailBinding(),
       transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── ADD STOCK (no bottom nav) ───────────────
+    // ─── ADD STOCK ────────────────────────────────────────
     GetPage(
       name: AppRoutes.ADD_STOCK,
       page: () => const AddStockScreen(),
       binding: StockDetailBinding(),
       transition: Transition.downToUp,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── IMPORT CSV (no bottom nav) ──────────────
+    // ─── IMPORT CSV ───────────────────────────────────────
     GetPage(
       name: AppRoutes.IMPORT_CSV,
       page: () => const ImportCsvScreen(),
       transition: Transition.downToUp,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── AI CHAT (with bottom nav) ───────────────
+    // ─── AI CHAT ──────────────────────────────────────────
     GetPage(
       name: AppRoutes.AI_CHAT,
       page: () => const MainNavigationScreen(child: AiChatScreen()),
       binding: AiChatBinding(),
-      // transition: Transition.rightToLeft,
-      // preventDuplicates: true,
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
+      preventDuplicates: true,
     ),
 
-    // ─── MARKET NEWS (with bottom nav) ───────────
+    // ─── MARKET NEWS ──────────────────────────────────────
     GetPage(
       name: AppRoutes.MARKET_NEWS,
       page: () => const MainNavigationScreen(child: MarketNewsScreen()),
       binding: NewsBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
+      preventDuplicates: true,
     ),
     GetPage(
       name: AppRoutes.NEWS_DETAIL,
       page: () => const NewsDetailScreen(),
       transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    // ─── PROFILE (with bottom nav) ───────────────
+    // ─── PROFILE ──────────────────────────────────────────
     GetPage(
       name: AppRoutes.PROFILE,
       page: () => const MainNavigationScreen(child: ProfileScreen()),
       binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
+      preventDuplicates: true,
     ),
 
-    // ─── SUCCESS ─────────────────────────────────
+    // ─── SUCCESS ──────────────────────────────────────────
     GetPage(
       name: AppRoutes.SUCCESS,
       page: () => const SuccessScreen(),
       transition: Transition.zoom,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
 
-    GetPage(name: AppRoutes.HOLDINGS,
-        page: () => const HoldingsScreen()),
+    // ─── HOLDINGS ─────────────────────────────────────────
+    GetPage(
+      name: AppRoutes.HOLDINGS,
+      page: () => const HoldingsScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
 
+    // ─── INSIGHTS ─────────────────────────────────────────
     GetPage(
       name: AppRoutes.INSIGHTS,
       page: () => const InsightsScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+      preventDuplicates: true,
     ),
-    GetPage(name: AppRoutes.MEMORY_REALITY,
-        page: () => const MemoryRealityScreen()),
+    GetPage(
+      name: AppRoutes.MEMORY_REALITY,
+      page: () => const MemoryRealityScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
+    GetPage(
+      name: AppRoutes.TIME_MACHINE,
+      page: () => const TimeMachineScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
+    GetPage(
+      name: AppRoutes.ATTENTION_MAP,
+      page: () => const AttentionMapScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
+    GetPage(
+      name: AppRoutes.UNCERTAINTY,
+      page: () => const UncertaintyScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
+    GetPage(
+      name: AppRoutes.IDENTITY_DRIFT,
+      page: () => const IdentityDriftScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
 
-    GetPage(name: AppRoutes.TIME_MACHINE,
-        page: () => const TimeMachineScreen()),
-
-    GetPage(name: AppRoutes.ATTENTION_MAP,
-        page: () => const AttentionMapScreen()),
-
-    GetPage(name: AppRoutes.UNCERTAINTY,
-        page: () => const UncertaintyScreen()),
-
-    GetPage(name: AppRoutes.IDENTITY_DRIFT,
-        page: () => const IdentityDriftScreen()),
-
+    // ─── FINANCE ──────────────────────────────────────────
     GetPage(
       name: AppRoutes.TRANSACTIONS,
       page: () => const TransactionsScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: AppRoutes.SPENDING_ANALYSIS,
       page: () => const SpendingAnalysisScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: AppRoutes.FINANCE_DASHBOARD,
       page: () => const FinanceDashboardScreen(),
       transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 200),
+      preventDuplicates: true,
     ),
   ];
 }

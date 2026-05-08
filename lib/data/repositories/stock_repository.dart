@@ -20,77 +20,69 @@ class StockRepository {
   final FmpService _fmp;
   final YahooFinanceService _yahoo;
 
-  static const Duration _quoteTtl = Duration(minutes: 5);
-  static const Duration _profileTtl = Duration(days: 7);
-  static const Duration _historyTtl = Duration(hours: 24);
+  // ✅ Longer TTLs = fewer API calls burned per day
+  static const Duration _quoteTtl     = Duration(minutes: 10);
+  static const Duration _profileTtl   = Duration(days: 30);
+  static const Duration _historyTtl   = Duration(hours: 48);
+  static const Duration _avFallbackTtl = Duration(days: 7);
 
-  // In StockRepository — add this method
   Future<void> clearProfileCache(String symbol) async {
-    await CacheManager.remove('company-profile:${symbol.toUpperCase()}');
-    await CacheManager.remove('quote:${symbol.toUpperCase()}');
-    await CacheManager.remove('daily-history:${symbol.toUpperCase()}:full');
-    await CacheManager.remove('weekly-history:${symbol.toUpperCase()}');
+    final s = symbol.toUpperCase();
+    await CacheManager.remove('company-profile:$s');
+    await CacheManager.remove('quote:$s');
+    await CacheManager.remove('daily-history:$s:full');
+    await CacheManager.remove('daily-history:$s:compact');
+    await CacheManager.remove('weekly-history:$s');
   }
 
-  // ── Quote ──────────────────────────────────────────────────────────────────
-  // Yahoo Finance is primary for Indian stocks (free, no key, accurate).
-  // Finnhub is used as fallback for US/global symbols.
-
+  // ── Quote ─────────────────────────────────────────────────────────────────
+  // Yahoo = primary (unlimited, free, accurate for India)
+  // Finnhub = fallback (US/global)
 
   Future<Map<String, dynamic>> getQuote(String symbol) {
     return _cachedMap(
       key: 'quote:${symbol.toUpperCase()}',
       ttl: _quoteTtl,
       loader: () async {
-        // Try Yahoo first — works for all NSE/BSE stocks
         try {
           final data = await _yahoo.getQuote(symbol);
           if (data.isNotEmpty && _toDouble(data['c']) > 0) return data;
         } catch (_) {}
-
-        // Fallback to Finnhub for US/global symbols
         return _finnhub.getQuote(symbol);
       },
     );
   }
 
-  // ── Search ─────────────────────────────────────────────────────────────────
+  // ── Search ────────────────────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> searchStocks(String query) async {
     if (query.trim().isEmpty) return const [];
-
-    final finnhubResults = await _finnhub.searchSymbols(query);
-    if (finnhubResults.isNotEmpty) return finnhubResults;
-
+    final results = await _finnhub.searchSymbols(query);
+    if (results.isNotEmpty) return results;
     return _fmp.searchCompanies(query);
   }
 
-  // ── Company Profile ────────────────────────────────────────────────────────
+  // ── Company Profile ───────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getCompanyProfile(String symbol) {
     return _cachedMap(
       key: 'company-profile:${symbol.toUpperCase()}',
       ttl: _profileTtl,
       loader: () async {
-        // Try Yahoo first
         try {
           final data = await _yahoo.getCompanyProfile(symbol);
           if (data.isNotEmpty) return data;
         } catch (_) {}
-
-        // Try Finnhub
         try {
           final data = await _finnhub.getCompanyProfile(symbol);
           if (data.isNotEmpty) return data;
         } catch (_) {}
-
-        // Fallback to FMP
         return _fmp.getCompanyProfile(symbol);
       },
     );
   }
 
-  // ── Financials ─────────────────────────────────────────────────────────────
+  // ── Financials ────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getBasicFinancials(String symbol) {
     return _cachedMap(
@@ -122,9 +114,11 @@ class StockRepository {
     );
   }
 
-  // ── Time Series ────────────────────────────────────────────────────────────
-  // Yahoo Finance is primary — no rate limits, works for Indian stocks.
-  // Alpha Vantage is fallback (25 req/day free limit).
+  // ── Daily Time Series ─────────────────────────────────────────────────────
+  // Strategy:
+  // 1. Try Yahoo (unlimited, primary)
+  // 2. Only call Alpha Vantage if Yahoo fails AND daily limit not reached
+  // 3. Cache AV results for 7 days to preserve quota
 
   Future<Map<String, dynamic>> getDailyTimeSeries(
       String symbol, {
@@ -134,7 +128,7 @@ class StockRepository {
       key: 'daily-history:${symbol.toUpperCase()}:$outputSize',
       ttl: _historyTtl,
       loader: () async {
-        // Yahoo Finance — primary
+        // ✅ Yahoo first - no rate limits
         try {
           final data = await _yahoo.getDailyTimeSeries(
             symbol,
@@ -143,31 +137,69 @@ class StockRepository {
           if (_hasSeriesData(data, 'Time Series (Daily)')) return data;
         } catch (_) {}
 
-        // Alpha Vantage — fallback
-        return _alphaVantage.getDailyTimeSeries(
-          symbol,
-          outputSize: outputSize,
-        );
+        // ✅ Alpha Vantage fallback ONLY if limit not reached
+        if (AlphaVantageService.isDailyLimitReached) {
+          return const {}; // return empty - caller handles gracefully
+        }
+
+        try {
+          final data = await _alphaVantage.getDailyTimeSeries(
+            symbol,
+            outputSize: outputSize,
+          );
+          // ✅ Cache AV results longer to preserve quota
+          if (data.isNotEmpty) {
+            await CacheManager.put(
+              'daily-history:${symbol.toUpperCase()}:$outputSize',
+              data,
+              ttl: _avFallbackTtl,
+            );
+          }
+          return data;
+        } catch (_) {
+          return const {};
+        }
       },
     );
   }
+
+  // ── Weekly Time Series ────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getWeeklyTimeSeries(String symbol) {
     return _cachedMap(
       key: 'weekly-history:${symbol.toUpperCase()}',
       ttl: _historyTtl,
       loader: () async {
-        // Yahoo Finance — primary
+        // ✅ Yahoo first
         try {
           final data = await _yahoo.getWeeklyTimeSeries(symbol);
           if (_hasSeriesData(data, 'Weekly Time Series')) return data;
         } catch (_) {}
 
-        // Alpha Vantage — fallback
-        return _alphaVantage.getWeeklyTimeSeries(symbol);
+        // ✅ Alpha Vantage fallback ONLY if limit not reached
+        if (AlphaVantageService.isDailyLimitReached) {
+          return const {};
+        }
+
+        try {
+          final data = await _alphaVantage.getWeeklyTimeSeries(symbol);
+          if (data.isNotEmpty) {
+            await CacheManager.put(
+              'weekly-history:${symbol.toUpperCase()}',
+              data,
+              ttl: _avFallbackTtl,
+            );
+          }
+          return data;
+        } catch (_) {
+          return const {};
+        }
       },
     );
   }
+
+  // ── RSI ───────────────────────────────────────────────────────────────────
+  // RSI only comes from Alpha Vantage - cache for 48h to save quota
 
   Future<Map<String, dynamic>> getRsi({
     required String symbol,
@@ -175,19 +207,30 @@ class StockRepository {
     int timePeriod = 14,
     String seriesType = 'close',
   }) {
+    // ✅ Skip entirely if daily limit reached
+    if (AlphaVantageService.isDailyLimitReached) {
+      return Future.value(const {});
+    }
+
     return _cachedMap(
       key: 'rsi:${symbol.toUpperCase()}:$interval:$timePeriod:$seriesType',
-      ttl: _historyTtl,
-      loader: () => _alphaVantage.getRsi(
-        symbol: symbol,
-        interval: interval,
-        timePeriod: timePeriod,
-        seriesType: seriesType,
-      ),
+      ttl: _avFallbackTtl, // ✅ 7 days to preserve quota
+      loader: () async {
+        try {
+          return await _alphaVantage.getRsi(
+            symbol: symbol,
+            interval: interval,
+            timePeriod: timePeriod,
+            seriesType: seriesType,
+          );
+        } catch (_) {
+          return const {};
+        }
+      },
     );
   }
 
-  // ── Stock Detail (combined) ────────────────────────────────────────────────
+  // ── Stock Detail (combined) ───────────────────────────────────────────────
 
   Future<Map<String, dynamic>> getStockDetail(String symbol) async {
     final results = await Future.wait([
@@ -206,23 +249,22 @@ class StockRepository {
     };
   }
 
-  // ── Cache helpers ──────────────────────────────────────────────────────────
+  // ── Cache helpers ─────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _cachedMap({
     required String key,
     required Duration ttl,
     required Future<Map<String, dynamic>> Function() loader,
   }) async {
+    // ✅ Check cache first
     final cached = await CacheManager.get<Object>(key);
     if (cached is Map) {
       final map = _stringKeyedMap(cached);
-      // ── Only return cache if it actually has data ──────────────────────
       if (map.isNotEmpty) return map;
     }
 
     final data = await loader();
 
-    // ── Only cache successful (non-empty) responses ──────────────────────
     if (data.isNotEmpty) {
       await CacheManager.put(key, data, ttl: ttl);
     }
@@ -241,11 +283,13 @@ class StockRepository {
     }
 
     final data = await loader();
-    await CacheManager.put(key, data, ttl: ttl);
+    if (data.isNotEmpty) {
+      await CacheManager.put(key, data, ttl: ttl);
+    }
     return data;
   }
 
-  // ── Utils ──────────────────────────────────────────────────────────────────
+  // ── Utils ─────────────────────────────────────────────────────────────────
 
   static bool _hasSeriesData(Map<String, dynamic> data, String key) {
     final series = data[key];

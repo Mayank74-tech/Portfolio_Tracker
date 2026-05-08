@@ -1,5 +1,3 @@
-// lib/presentation/controllers/behavioral_controller.dart
-
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/behavioral/belief_log_model.dart';
@@ -17,99 +15,82 @@ class BehavioralController extends GetxController {
   // ── Reactive state ─────────────────────────────────────────────────────────
   final RxBool isLoading = false.obs;
 
-  // Feature 1
-  final Rx<Map<String, dynamic>> memoryReality =
-  Rx<Map<String, dynamic>>({});
+  final memoryReality = <String, dynamic>{}.obs;
+  final attentionData = <String, dynamic>{}.obs;
+  final uncertaintyBands = <String, dynamic>{}.obs;
+  final halfLives = <Map<String, dynamic>>[].obs;
+  final silentWinners = <Map<String, dynamic>>[].obs;
+  final cascadeRisk = <String, dynamic>{}.obs;
+  final identityDrift = <String, dynamic>{}.obs;
+  final confidenceIllusion = <String, dynamic>{}.obs;
+  final frictionScore = <String, dynamic>{}.obs;
+  final inactionData = <String, dynamic>{}.obs;
+  final delayedTruths = <Map<String, dynamic>>[].obs;
+  final conflictData = <String, dynamic>{}.obs;
 
-  // Feature 3
-  final Rx<Map<String, dynamic>> attentionData =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 4
-  final Rx<Map<String, dynamic>> uncertaintyBands =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 5
-  final RxList<Map<String, dynamic>> halfLives =
-      <Map<String, dynamic>>[].obs;
-
-  // Feature 8
-  final RxList<Map<String, dynamic>> silentWinners =
-      <Map<String, dynamic>>[].obs;
-
-  // Feature 9
-  final Rx<Map<String, dynamic>> cascadeRisk =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 10
-  final Rx<Map<String, dynamic>> identityDrift =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 11
-  final Rx<Map<String, dynamic>> confidenceIllusion =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 12
-  final Rx<Map<String, dynamic>> frictionScore =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 13
-  final Rx<Map<String, dynamic>> inactionData =
-  Rx<Map<String, dynamic>>({});
-
-  // Feature 14
-  final RxList<Map<String, dynamic>> delayedTruths =
-      <Map<String, dynamic>>[].obs;
-
-  // Feature 15
-  final Rx<Map<String, dynamic>> conflictData =
-  Rx<Map<String, dynamic>>({});
-
-  final RxList<BeliefLogModel> allBeliefs =
-      <BeliefLogModel>[].obs;
+  final allBeliefs = <BeliefLogModel>[].obs;
+  final beliefAccuracy = 0.0.obs;
 
   late final BehavioralTrackerService _tracker;
-  final RxDouble beliefAccuracy = 0.0.obs;
+  late final PortfolioController _portfolio;
+
+  Worker? _portfolioDebounce;
 
   @override
   void onInit() {
     super.onInit();
+
     _tracker = BehavioralTrackerService();
+    _portfolio = Get.find<PortfolioController>();
+
+    // ✅ Auto refresh when holdings change (debounced)
+    _portfolioDebounce = debounce(
+      _portfolio.holdings,
+          (_) => loadAllInsights(),
+      time: const Duration(milliseconds: 400),
+    );
+
     loadAllInsights();
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // ✅ HEAVY COMPUTATION MOVED TO ISOLATE
+  // ───────────────────────────────────────────────────────────────────────────
+
   Future<void> loadAllInsights() async {
+    if (isLoading.value) return; // ✅ Prevent duplicate loads
+
     isLoading.value = true;
+
     try {
-      final portfolio = Get.find<PortfolioController>();
-      final holdings = portfolio.holdings;
+      final holdingsCopy = _portfolio.holdings.toList();
+      final beliefs = _tracker.getAllBeliefs();
+      final accuracy = _tracker.beliefAccuracyRate();
 
-      beliefAccuracy.value = _tracker.beliefAccuracyRate();
-      allBeliefs.assignAll(_tracker.getAllBeliefs());
-      beliefAccuracy.value = _tracker.beliefAccuracyRate();
+      // ✅ Run repository analysis in background isolate
+      final results = await compute(
+        _analyzeBehavioralData,
+        _BehavioralInput(
+          holdings: holdingsCopy,
+          repo: _repo,
+        ),
+      );
 
-      attentionData.value =
-          _repo.getAttentionAnalysis(holdings);
-      uncertaintyBands.value =
-          _repo.getUncertaintyBands(holdings);
-      halfLives.assignAll(
-          _repo.getDecisionHalfLives(holdings));
-      silentWinners.assignAll(
-          _repo.getSilentWinners(holdings));
-      cascadeRisk.value =
-          _repo.getCascadingRisk(holdings);
-      identityDrift.value =
-          _repo.getIdentityDrift(holdings);
-      confidenceIllusion.value =
-          _repo.getConfidenceIllusion();
-      frictionScore.value =
-          _repo.getDecisionFriction();
-      inactionData.value =
-          _repo.getInactionAnalysis();
-      delayedTruths.assignAll(
-          _repo.getDelayedTruths(holdings));
-      conflictData.value =
-          _repo.getInternalConflict(holdings);
+      // ✅ Batch update (less rebuild thrashing)
+      beliefAccuracy.value = accuracy;
+      allBeliefs.assignAll(beliefs);
+
+      attentionData.value = results.attention;
+      uncertaintyBands.value = results.uncertainty;
+      halfLives.assignAll(results.halfLives);
+      silentWinners.assignAll(results.silentWinners);
+      cascadeRisk.value = results.cascade;
+      identityDrift.value = results.identityDrift;
+      confidenceIllusion.value = results.confidenceIllusion;
+      frictionScore.value = results.friction;
+      inactionData.value = results.inaction;
+      delayedTruths.assignAll(results.delayedTruths);
+      conflictData.value = results.conflict;
     } catch (e) {
       debugPrint('BehavioralController error: $e');
     } finally {
@@ -117,13 +98,33 @@ class BehavioralController extends GetxController {
     }
   }
 
-  // ── Feature 1: Memory vs Reality ──────────────────────────────────────────
+  // ✅ Static isolate entry point
+  static _BehavioralOutput _analyzeBehavioralData(
+      _BehavioralInput input) {
+    final repo = input.repo;
+    final holdings = input.holdings;
+
+    return _BehavioralOutput(
+      attention: repo.getAttentionAnalysis(holdings),
+      uncertainty: repo.getUncertaintyBands(holdings),
+      halfLives: repo.getDecisionHalfLives(holdings),
+      silentWinners: repo.getSilentWinners(holdings),
+      cascade: repo.getCascadingRisk(holdings),
+      identityDrift: repo.getIdentityDrift(holdings),
+      confidenceIllusion: repo.getConfidenceIllusion(),
+      friction: repo.getDecisionFriction(),
+      inaction: repo.getInactionAnalysis(),
+      delayedTruths: repo.getDelayedTruths(holdings),
+      conflict: repo.getInternalConflict(holdings),
+    );
+  }
+
+  // ── Feature 1 ─────────────────────────────────────────────────────────────
 
   Future<void> submitMemoryBelief(String userBelief) async {
-    final portfolio = Get.find<PortfolioController>();
     final result = _repo.analyzeMemoryVsReality(
       userBelief: userBelief,
-      holdings: portfolio.holdings,
+      holdings: _portfolio.holdings,
     );
 
     await _tracker.logBelief(
@@ -137,8 +138,6 @@ class BehavioralController extends GetxController {
     memoryReality.value = result;
   }
 
-  // ── Feature 3: Log attention ───────────────────────────────────────────────
-
   Future<void> logStockView({
     required String symbol,
     required int durationSeconds,
@@ -148,13 +147,9 @@ class BehavioralController extends GetxController {
       durationSeconds: durationSeconds,
       screenName: 'stock_detail',
     );
-    // Refresh attention data
-    final portfolio = Get.find<PortfolioController>();
     attentionData.value =
-        _repo.getAttentionAnalysis(portfolio.holdings);
+        _repo.getAttentionAnalysis(_portfolio.holdings);
   }
-
-  // ── Feature 12: Log buy decision ──────────────────────────────────────────
 
   Future<void> logBuyDecision({
     required String symbol,
@@ -172,8 +167,6 @@ class BehavioralController extends GetxController {
     frictionScore.value = _repo.getDecisionFriction();
   }
 
-  // ── Feature 13: Log rebalance considered ──────────────────────────────────
-
   Future<void> logRebalanceConsidered() async {
     await _tracker.recordRebalanceConsidered();
     inactionData.value = _repo.getInactionAnalysis();
@@ -184,16 +177,11 @@ class BehavioralController extends GetxController {
     inactionData.value = _repo.getInactionAnalysis();
   }
 
-  // ── Feature 10: Set investing style ───────────────────────────────────────
-
   Future<void> setInvestingStyle(String style) async {
     await _tracker.updateInvestingStyle(style);
-    final portfolio = Get.find<PortfolioController>();
     identityDrift.value =
-        _repo.getIdentityDrift(portfolio.holdings);
+        _repo.getIdentityDrift(_portfolio.holdings);
   }
-
-  // ── Feature 11: Record confidence ─────────────────────────────────────────
 
   Future<void> recordConfidence({
     required double confidence,
@@ -206,13 +194,57 @@ class BehavioralController extends GetxController {
     confidenceIllusion.value = _repo.getConfidenceIllusion();
   }
 
-// Add setRiskTolerance method
   Future<void> setRiskTolerance(String risk) async {
     await _tracker.setRiskTolerance(risk);
-    final portfolio = Get.find<PortfolioController>();
     conflictData.value =
-        _repo.getInternalConflict(portfolio.holdings);
+        _repo.getInternalConflict(_portfolio.holdings);
   }
 
+  @override
+  void onClose() {
+    _portfolioDebounce?.dispose();
+    super.onClose();
+  }
+}
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ Data classes for isolate transfer
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BehavioralInput {
+  final List<Map<String, dynamic>> holdings;
+  final BehavioralRepository repo;
+
+  _BehavioralInput({
+    required this.holdings,
+    required this.repo,
+  });
+}
+
+class _BehavioralOutput {
+  final Map<String, dynamic> attention;
+  final Map<String, dynamic> uncertainty;
+  final List<Map<String, dynamic>> halfLives;
+  final List<Map<String, dynamic>> silentWinners;
+  final Map<String, dynamic> cascade;
+  final Map<String, dynamic> identityDrift;
+  final Map<String, dynamic> confidenceIllusion;
+  final Map<String, dynamic> friction;
+  final Map<String, dynamic> inaction;
+  final List<Map<String, dynamic>> delayedTruths;
+  final Map<String, dynamic> conflict;
+
+  _BehavioralOutput({
+    required this.attention,
+    required this.uncertainty,
+    required this.halfLives,
+    required this.silentWinners,
+    required this.cascade,
+    required this.identityDrift,
+    required this.confidenceIllusion,
+    required this.friction,
+    required this.inaction,
+    required this.delayedTruths,
+    required this.conflict,
+  });
 }

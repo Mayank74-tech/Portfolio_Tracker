@@ -10,8 +10,12 @@ class MainNavigationScreen extends StatelessWidget {
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
-      body: child,
-      bottomNavigationBar: const BottomNavBar(),
+      // ✅ RepaintBoundary: bottom nav repaints independently
+      // from page content - scrolling page won't repaint nav
+      body: RepaintBoundary(child: child),
+      bottomNavigationBar: const RepaintBoundary(
+        child: BottomNavBar(),
+      ),
     );
   }
 }
