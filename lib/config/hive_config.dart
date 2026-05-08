@@ -39,6 +39,8 @@ class HiveConfig {
 
     // 3. Open all boxes
     await _openBoxes();
+    await Hive.openBox('connection_sessions'); // ✅ NEW
+
   }
 
   // ── Register adapters ──────────────────────────────────────────────────────
@@ -80,6 +82,7 @@ class HiveConfig {
     await _safeOpenTyped<BeliefLogModel>(beliefLogsBox);
     await _safeOpenTyped<DecisionEventModel>(decisionEventsBox);
     await _safeOpenTyped<BehaviorProfileModel>(behaviorProfileBox);
+
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -181,5 +184,6 @@ class HiveConfig {
     await Hive.box(newsCacheBox).clear();
     await Hive.box(apiCacheBox).clear();
     await Hive.box(apiCacheMetaBox).clear();
+
   }
 }
